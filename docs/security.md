@@ -114,6 +114,12 @@ Screenshots returned by `screenshot` may contain adversarial text designed to ma
 - Agent system prompts should treat on-screen text as untrusted data
 - Future: optional screenshot sanitization or classification pass
 
+## Agent-restricted automation targets
+
+Coding agents and automated gate scripts **must not** use WinGuiMcp to open or actuate Control Panel, Windows Settings (`ms-settings:`), Registry Editor, Group Policy, Disk Management, uninstallers, or similar system-configuration surfaces. Rationale: mis-clicks can change network, privacy, accounts, or uninstall software.
+
+Product specs may still describe Settings flows for **manual operator** verification on a VM. See [.agent/SAFETY.md](../.agent/SAFETY.md).
+
 ## Data handling
 
 - Snapshots contain UI text (names, values)—may include PII or secrets visible on screen

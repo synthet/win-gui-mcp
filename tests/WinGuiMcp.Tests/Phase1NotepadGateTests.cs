@@ -137,8 +137,13 @@ public class Phase1NotepadGateTests
             var handle = GateTestHelpers.ReadHandle(launch);
             GateTestHelpers.TryFocus(tools.Service, handle);
 
-            GateTestHelpers.AssertResponseOk(
-                tools.Service.TypeText(content, null, clearFirst: false, submit: false, includeSnapshot: false));
+            if (!GateTestHelpers.TryTypeInTextEditor(tools.Service, handle, content))
+            {
+                GateTestHelpers.AssertResponseOk(
+                    tools.Service.TypeText(content, null, clearFirst: false, submit: false, includeSnapshot: false));
+            }
+
+            GateTestHelpers.TryFocus(tools.Service, handle);
             GateTestHelpers.AssertResponseOk(tools.Service.Hotkey("ctrl+s", handle, includeSnapshot: false));
 
             Thread.Sleep(800);

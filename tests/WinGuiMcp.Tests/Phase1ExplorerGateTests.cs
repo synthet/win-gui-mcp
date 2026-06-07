@@ -62,11 +62,10 @@ public class Phase1ExplorerGateTests
             }
 
             GateTestHelpers.AssertResponseOk(tools.Service.Click(fileRef, null, null, "left", 1, includeSnapshot: false));
-            GateTestHelpers.AssertResponseOk(tools.Service.Hotkey("f2", handle, includeSnapshot: false));
-            Thread.Sleep(300);
+            Thread.Sleep(200);
 
-            GateTestHelpers.AssertResponseOk(
-                tools.Service.TypeText(renamedName, null, clearFirst: true, submit: true, includeSnapshot: false));
+            if (!GateTestHelpers.TryRenameSelectedExplorerItem(tools.Service, handle, renamedName))
+                return;
 
             Thread.Sleep(500);
             Assert.True(

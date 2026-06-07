@@ -40,6 +40,22 @@ Never hang waiting for:
 - **Warn** before destructive UI actions (delete, uninstall, send, format).
 - Recommend VM or Windows Sandbox for unattended runs.
 - Never commit `.cursor/mcp.json` or secrets.
+- **Never automate restricted system apps** (see below).
+
+## Restricted targets — agents must not open or actuate
+
+Coding agents, gate runners, and `/phase-gate` **must not** launch, focus, snapshot for action planning, click, toggle, or type in:
+
+| Category | Examples | Why |
+|----------|----------|-----|
+| **Control Panel / legacy CPL** | `control.exe`, `appwiz.cpl`, `sysdm.cpl`, `ncpa.cpl` | Uninstall, network, system config |
+| **Windows Settings** | `ms-settings:`, Settings (`SystemSettings`) | Toggles can change privacy, network, accounts, updates |
+| **Admin / security surfaces** | Registry Editor, Local Group Policy, Computer Management, Disk Management, Windows Security (except read-only smoke if ever required) | Destructive or hard-to-reverse changes |
+| **Account & recovery** | User Accounts, Reset this PC, BitLocker, Windows Update restart flows | System lockout or data loss |
+
+**Allowed gate / dev apps:** Calculator, Notepad, File Explorer (user folders only — no Format or Properties→Disk Tools), and repo WinForms/WPF samples.
+
+Operators may run restricted flows **manually** on a VM; agents do not. If a task requires Settings or Control Panel, stop and ask the user to perform it by hand.
 
 ## MCP surface
 

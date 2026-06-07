@@ -117,6 +117,7 @@ Server key: **`win-gui-mcp`** (stdio via `dotnet run`).
 - **Errors** — typed codes and recovery hints from [`docs/errors.md`](docs/errors.md).
 - **Phase scope** — Phase 1 gate apps pass before Phase 2 work ([`docs/phases.md`](docs/phases.md)).
 - **Security** — respect UIPI, elevation, and deployment constraints ([`docs/security.md`](docs/security.md), [`.agent/SAFETY.md`](.agent/SAFETY.md)).
+- **Restricted system apps** — agents never launch or actuate Control Panel, Windows Settings (`ms-settings:`), or other targets in [`.agent/SAFETY.md`](.agent/SAFETY.md#restricted-targets--agents-must-not-open-or-actuate).
 - **Actuation** — UIA control patterns first; coordinate clicks only as documented fallback.
 
 ## Code style

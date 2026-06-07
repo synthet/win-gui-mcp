@@ -28,6 +28,7 @@ Do not hang on secure desktop, UAC prompts, locked workstation, or disconnected 
 - Warn before destructive UI actions (delete, send, format, uninstall).
 - Recommend VM / Windows Sandbox for unattended automation.
 - MVP transport is **stdio only** — no network exposure without auth (Phase 4).
+- **Never automate Control Panel, Windows Settings (`ms-settings:`), or other restricted system apps** — see [.agent/SAFETY.md](../../.agent/SAFETY.md#restricted-targets--agents-must-not-open-or-actuate). Gate/dev flows use Calculator, Notepad, Explorer (user folders), and repo samples only.
 
 ## Secrets
 

@@ -27,7 +27,7 @@ dotnet build WinGuiMcp.sln
 dotnet test tests/WinGuiMcp.Tests/WinGuiMcp.Tests.csproj
 ```
 
-Gate tests launch real Windows apps (Calculator, Notepad, Explorer, Settings, samples). Run on an interactive desktop session; suite uses `[Collection("Phase1Gate")]` with no parallelization.
+Gate tests launch real Windows apps (Calculator, Notepad, Explorer, samples). **Do not** automate Settings or Control Panel — see [.agent/SAFETY.md](SAFETY.md). Run on an interactive desktop session; suite uses `[Collection("Phase1Gate")]` with no parallelization.
 
 If `dotnet build` fails because `WinGuiMcp.dll` is locked, reload/stop the MCP server in Cursor first.
 

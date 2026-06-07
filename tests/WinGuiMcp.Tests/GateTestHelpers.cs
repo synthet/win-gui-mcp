@@ -127,12 +127,17 @@ internal static class GateTestHelpers
 
     public static bool TrySetFilenameInSaveDialog(ToolService tools, int dialogHandle, string filePath)
     {
+        TryFocus(tools, dialogHandle);
+        Thread.Sleep(400);
+        tools.Snapshot(dialogHandle, "window", "control", includeOffscreen: true);
+
         foreach (var (by, value, match) in new (string, string, string)[]
                  {
                      ("name", "File name:", "contains"),
                      ("name", "Имя файла", "contains"),
-                     ("role", "ComboBox", "exact"),
+                     ("automationId", "1001", "exact"),
                      ("role", "Edit", "exact"),
+                     ("role", "ComboBox", "exact"),
                  })
         {
             if (TrySetValueByLocator(tools, dialogHandle, by, value, filePath, match))
@@ -140,6 +145,64 @@ internal static class GateTestHelpers
         }
 
         return false;
+    }
+
+    public static bool TryTypeInTextEditor(ToolService tools, int handle, string text)
+    {
+        foreach (var (by, value, match) in new (string, string, string)[]
+                 {
+                     ("role", "Document", "exact"),
+                     ("role", "Edit", "exact"),
+                     ("role", "Text", "exact"),
+                 })
+        {
+            if (!TryFindElementRef(tools, handle, by, value, match, out var @ref))
+                continue;
+
+            try
+            {
+                AssertResponseOk(tools.TypeText(text, @ref, clearFirst: false, submit: false, includeSnapshot: false));
+                return true;
+            }
+            catch (ToolException)
+            {
+                // Try next editor locator.
+            }
+        }
+
+        return false;
+    }
+
+    public static bool TryRenameSelectedExplorerItem(ToolService tools, int handle, string newName)
+    {
+        TryFocus(tools, handle);
+        AssertResponseOk(tools.Hotkey("f2", handle, includeSnapshot: false));
+        Thread.Sleep(500);
+        tools.Snapshot(handle, "window", "control", includeOffscreen: true);
+
+        if (TryFindElementRef(tools, handle, "automationId", "System.ItemNameDisplay", "exact", out var nameEdit))
+        {
+            try
+            {
+                AssertResponseOk(tools.SetValue(nameEdit, newName, includeSnapshot: false));
+                AssertResponseOk(tools.Hotkey("enter", handle, includeSnapshot: false));
+                return true;
+            }
+            catch (ToolException)
+            {
+                // Fall through to SendInput typing.
+            }
+        }
+
+        try
+        {
+            AssertResponseOk(tools.TypeText(newName, null, clearFirst: true, submit: true, includeSnapshot: false));
+            return true;
+        }
+        catch (ToolException)
+        {
+            return false;
+        }
     }
 
     public static string CreateTempGateDirectoryWithFile(string fileName = "gate-rename-me.txt")
