@@ -1,4 +1,6 @@
-﻿namespace WinGuiMcp.WinFormsSample;
+﻿#nullable enable
+
+namespace WinGuiMcp.WinFormsSample;
 
 partial class Form1
 {

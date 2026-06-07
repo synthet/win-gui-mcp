@@ -18,9 +18,16 @@ Stack rationale and alternatives: [`docs/stack.md`](docs/stack.md).
 
 ## Implementation status
 
-The repo is **spec-heavy, code-stub**. Only [`src/WinGuiMcp/Program.cs`](src/WinGuiMcp/Program.cs) exists today (Hello World). Modules described in [`docs/architecture.md`](docs/architecture.md) (`Transport/`, `Tools/`, `Session/`, `Perception/`, `Action/`, `Capture/`, `Platform/`) are not yet built.
+**Phase 1 MVP is implemented** in [`src/WinGuiMcp/`](src/WinGuiMcp/): MCP host, all Phase 1 tools, UIA snapshot/refs, pattern actuation, WGC capture (BitBlt fallback), and gate tests under [`tests/WinGuiMcp.Tests/`](tests/WinGuiMcp.Tests/).
 
-Use [`.cursor/commands/bootstrap-phase1.md`](.cursor/commands/bootstrap-phase1.md) to scaffold Phase 1 when starting implementation.
+Gate status: [`.agent/PHASE1_GATE_RESULTS.md`](.agent/PHASE1_GATE_RESULTS.md) — automated coverage is **partial** for all six gate apps; optional steps exit early when UIA layout/locale differs.
+
+```bash
+dotnet build WinGuiMcp.sln
+dotnet test tests/WinGuiMcp.Tests/WinGuiMcp.Tests.csproj
+```
+
+If the MCP server is running in Cursor, stop/reload it before building (locks `bin/` output).
 
 ## Documentation (read first)
 
@@ -90,7 +97,7 @@ From repo root:
 ```bash
 dotnet build WinGuiMcp.sln
 dotnet run --project src/WinGuiMcp/WinGuiMcp.csproj
-# future: dotnet test
+dotnet test tests/WinGuiMcp.Tests/WinGuiMcp.Tests.csproj
 ```
 
 Quick reference: [`.agent/COMMANDS.md`](.agent/COMMANDS.md)

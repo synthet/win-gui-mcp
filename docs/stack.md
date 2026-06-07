@@ -70,8 +70,11 @@ Declared in `src/WinGuiMcp/WinGuiMcp.csproj`:
 | `FlaUI.UIA3` | 5.0.0 | UIA3 backend |
 | `ModelContextProtocol` | 1.4.0 | MCP server + stdio transport |
 | `Microsoft.Extensions.Hosting` | 10.0.x | Host bootstrap, DI |
+| `System.Drawing.Common` | 9.0.x | PNG encode for screenshots |
+| `Vortice.Direct3D11` | 3.6.x | D3D11 for WGC capture |
+| `Vortice.DXGI` | 3.6.x | DXGI interop for WGC |
 
-Phase 2+ packages (add when implementing): ONNX Runtime, WinRT projection packages for WGC/OCR as needed.
+Phase 2+ packages (add when implementing): ONNX Runtime, additional WinRT/OCR packages as needed.
 
 ## Architectural decisions aligned with research
 

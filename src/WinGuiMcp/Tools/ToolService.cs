@@ -91,7 +91,7 @@ public sealed class ToolService
         return new { ok = true, entry.Ref, role = entry.Node.Role, name = entry.Node.Name };
     }
 
-    public object GetProperties(string refValue)
+    public GetPropertiesEnvelope GetProperties(string refValue)
     {
         _session.EnsureNotExpired();
         _session.TouchActivity();
@@ -99,7 +99,7 @@ public sealed class ToolService
         var (windowIndex, _) = RefFormat.Parse(refValue);
         var snapshotId = _session.GetCurrentSnapshotId(windowIndex);
         var node = _session.RefTable.GetProperties(refValue, snapshotId);
-        return new { ok = true, node };
+        return GetPropertiesEnvelope.From(node);
     }
 
     public object Click(string? refValue, int? pointX, int? pointY, string button, int clickCount, bool includeSnapshot)

@@ -5,6 +5,7 @@
 [Ll]ogs/
 artifacts/
 publish/
+.build-verify/
 
 # NuGet
 *.nupkg

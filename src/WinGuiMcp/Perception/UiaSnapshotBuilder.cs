@@ -119,27 +119,34 @@ public sealed class UiaSnapshotBuilder : IDisposable
         {
             foreach (var child in element.FindAllChildren())
             {
-                if (!includeOffscreen && TryGetIsOffscreen(child))
-                    continue;
-
-                if (!ShouldIncludeNode(child, detail, includeOffscreen))
-                    continue;
-
-                if (ShouldHoist(child))
+                try
                 {
-                    var visibleChildren = child.FindAllChildren()
-                        .Where(c => includeOffscreen || !TryGetIsOffscreen(c))
-                        .Where(c => ShouldIncludeNode(c, detail, includeOffscreen))
-                        .ToList();
-
-                    if (visibleChildren.Count == 1)
-                    {
-                        children.Add(WalkElement(visibleChildren[0], windowIndex, ref elementIndex, snapshotId, hwnd, detail, includeOffscreen, depth + 1, session));
+                    if (!includeOffscreen && TryGetIsOffscreen(child))
                         continue;
-                    }
-                }
 
-                children.Add(WalkElement(child, windowIndex, ref elementIndex, snapshotId, hwnd, detail, includeOffscreen, depth + 1, session));
+                    if (!ShouldIncludeNode(child, detail, includeOffscreen))
+                        continue;
+
+                    if (ShouldHoist(child))
+                    {
+                        var visibleChildren = child.FindAllChildren()
+                            .Where(c => includeOffscreen || !TryGetIsOffscreen(c))
+                            .Where(c => ShouldIncludeNode(c, detail, includeOffscreen))
+                            .ToList();
+
+                        if (visibleChildren.Count == 1)
+                        {
+                            children.Add(WalkElement(visibleChildren[0], windowIndex, ref elementIndex, snapshotId, hwnd, detail, includeOffscreen, depth + 1, session));
+                            continue;
+                        }
+                    }
+
+                    children.Add(WalkElement(child, windowIndex, ref elementIndex, snapshotId, hwnd, detail, includeOffscreen, depth + 1, session));
+                }
+                catch
+                {
+                    // Skip children that fail UIA property queries (transient Explorer/Notepad nodes).
+                }
             }
         }
         else
@@ -177,7 +184,7 @@ public sealed class UiaSnapshotBuilder : IDisposable
         {
             Ref = refValue,
             Source = "uia",
-            Role = element.ControlType.ToString(),
+            Role = TryGetControlType(element)?.ToString() ?? "Unknown",
             Name = NullIfEmpty(TryGetName(element)),
             AutomationId = NullIfEmpty(TryGetAutomationId(element)),
             ClassName = NullIfEmpty(TryGetClassName(element)),
@@ -193,29 +200,38 @@ public sealed class UiaSnapshotBuilder : IDisposable
 
     private bool ShouldIncludeNode(AutomationElement element, string detail, bool includeOffscreen)
     {
-        if (!includeOffscreen && TryGetIsOffscreen(element))
+        try
+        {
+            if (!includeOffscreen && TryGetIsOffscreen(element))
+                return false;
+
+            var controlType = TryGetControlType(element);
+            if (controlType is not null && InteractiveTypes.Contains(controlType.Value))
+                return true;
+
+            if (HasInteractionPattern(element))
+                return true;
+
+            var name = TryGetName(element);
+            var automationId = TryGetAutomationId(element);
+            if (!string.IsNullOrEmpty(name) || !string.IsNullOrEmpty(automationId))
+                return true;
+
+            if (detail == "content")
+                return true;
+
+            return element.FindAllChildren().Any(c => ShouldIncludeNode(c, detail, includeOffscreen));
+        }
+        catch
+        {
             return false;
-
-        if (InteractiveTypes.Contains(element.ControlType))
-            return true;
-
-        if (HasInteractionPattern(element))
-            return true;
-
-        var name = TryGetName(element);
-        var automationId = TryGetAutomationId(element);
-        if (!string.IsNullOrEmpty(name) || !string.IsNullOrEmpty(automationId))
-            return true;
-
-        if (detail == "content")
-            return true;
-
-        return element.FindAllChildren().Any(c => ShouldIncludeNode(c, detail, includeOffscreen));
+        }
     }
 
     private static bool ShouldHoist(AutomationElement element)
     {
-        if (element.ControlType != ControlType.Pane && element.ControlType != ControlType.Group)
+        var controlType = TryGetControlType(element);
+        if (controlType != ControlType.Pane && controlType != ControlType.Group)
             return false;
 
         if (!string.IsNullOrEmpty(TryGetName(element)) || !string.IsNullOrEmpty(TryGetAutomationId(element)))
@@ -273,6 +289,18 @@ public sealed class UiaSnapshotBuilder : IDisposable
         catch
         {
             return true;
+        }
+    }
+
+    private static ControlType? TryGetControlType(AutomationElement element)
+    {
+        try
+        {
+            return element.ControlType;
+        }
+        catch
+        {
+            return null;
         }
     }
 

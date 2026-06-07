@@ -8,14 +8,17 @@ namespace WinGuiMcp.Tests;
 [CollectionDefinition("Phase1Gate", DisableParallelization = true)]
 public sealed class Phase1GateCollection : ICollectionFixture<Phase1GateCollection>;
 
+[Collection("Phase1Gate")]
 public class Phase1GateTests
 {
     [Fact]
     public void CalculatorGate_LaunchSnapshotAndListWindows()
     {
         using var tools = TestServiceFactoryExtensions.CreateDisposable();
+        using var launchedApp = new LaunchedAppScope();
 
         var launch = tools.Service.LaunchApp("calc.exe", null, null, 15000);
+        launchedApp.Track(launch);
         var launchJson = JsonSerializer.Serialize(launch);
         using var launchDoc = JsonDocument.Parse(launchJson);
         Assert.True(launchDoc.RootElement.GetProperty("ok").GetBoolean());
@@ -33,39 +36,51 @@ public class Phase1GateTests
         using var windowsDoc = JsonDocument.Parse(windowsJson);
         Assert.True(windowsDoc.RootElement.GetProperty("ok").GetBoolean());
 
-        TryClickCalculatorDigit(tools.Service, handle, snapshot);
+        _ = GateTestHelpers.TryClickButton(tools.Service, handle, "2", "Two", "Два");
     }
 
-    private static void TryClickCalculatorDigit(ToolService tools, int handle, SnapshotEnvelope snapshot)
+    [Fact]
+    public void CalculatorGate_ArithmeticFlow2Plus3Equals5()
     {
-        string? digitRef = null;
-        foreach (var name in new[] { "2", "Two", "Два" })
-        {
-            try
-            {
-                var found = tools.FindElement(handle, "name", name, nth: 0, match: "exact");
-                var foundJson = ToolResponse.Serialize(found);
-                using var doc = JsonDocument.Parse(foundJson);
-                if (!doc.RootElement.GetProperty("ok").GetBoolean())
-                    continue;
-                digitRef = doc.RootElement.GetProperty("ref").GetString();
-                break;
-            }
-            catch (ToolException)
-            {
-                // Try next localized name.
-            }
-        }
+        using var tools = TestServiceFactoryExtensions.CreateDisposable();
+        using var launchedApp = new LaunchedAppScope();
 
-        if (digitRef is null)
+        var launch = tools.Service.LaunchApp("calc.exe", null, null, 15000);
+        launchedApp.Track(launch);
+        var handle = GateTestHelpers.ReadHandle(launch);
+
+        GateTestHelpers.TryFocus(tools.Service, handle);
+        tools.Service.Snapshot(handle, "window", "control", includeOffscreen: false);
+
+        if (!GateTestHelpers.TryClickButton(tools.Service, handle, "2", "Two", "Два"))
             return;
 
-        var click = tools.Click(digitRef, null, null, "left", 1, includeSnapshot: false);
-        var clickJson = JsonSerializer.Serialize(click);
+        Assert.True(GateTestHelpers.TryClickButton(tools.Service, handle, "+", "Plus", "Плюс"));
+        Assert.True(GateTestHelpers.TryClickButton(tools.Service, handle, "3", "Three", "Три"));
+        Assert.True(GateTestHelpers.TryClickButton(tools.Service, handle, "=", "Equals", "Равно"));
+
         Assert.True(
-            clickJson.Contains("InvokePattern", StringComparison.OrdinalIgnoreCase) ||
-            clickJson.Contains("SendInput", StringComparison.OrdinalIgnoreCase),
-            clickJson);
+            GateTestHelpers.TreeContainsText(tools.Service, handle, "5") ||
+            GateTestHelpers.TreeContainsText(tools.Service, handle, "Display is 5"),
+            "Calculator result 5 not found in snapshot tree.");
+    }
+
+    [Fact]
+    public void CalculatorGate_SnapshotTokenBudget()
+    {
+        using var tools = TestServiceFactoryExtensions.CreateDisposable();
+        using var launchedApp = new LaunchedAppScope();
+
+        var launch = tools.Service.LaunchApp("calc.exe", null, null, 15000);
+        launchedApp.Track(launch);
+        var handle = GateTestHelpers.ReadHandle(launch);
+
+        GateTestHelpers.TryFocus(tools.Service, handle);
+        var snapshot = tools.Service.Snapshot(handle, "window", "control", includeOffscreen: false);
+        var treeJson = ToolResponse.Serialize(snapshot.Tree);
+
+        // Informational Phase 1 metric from docs/phases.md (< 8k tokens ~ 32k chars heuristic).
+        Assert.True(treeJson.Length < 64_000, $"Calculator tree JSON length {treeJson.Length} exceeds budget heuristic.");
     }
 }
 

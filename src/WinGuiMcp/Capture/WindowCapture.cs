@@ -11,50 +11,12 @@ public sealed class WindowCapture
     {
         try
         {
-            NativeMethods.RECT rect;
-            nint sourceHandle;
+            if (handle is 0)
+                throw new ToolException(ErrorCodes.InvalidArgument, "handle must be a non-zero HWND integer.");
 
-            if (handle is null or 0)
-            {
-                var width = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN);
-                var height = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN);
-                rect = new NativeMethods.RECT { Left = 0, Top = 0, Right = width, Bottom = height };
-                sourceHandle = NativeMethods.GetDesktopWindow();
-            }
-            else
-            {
-                if (!NativeMethods.IsWindow((nint)handle.Value))
-                    throw new ToolException(ErrorCodes.WindowGone, "Window handle is no longer valid.");
-
-                if (!NativeMethods.GetWindowRect((nint)handle.Value, out rect))
-                    throw new ToolException(ErrorCodes.CaptureFailed, "Could not read window bounds.");
-
-                sourceHandle = (nint)handle.Value;
-            }
-
-            var srcX = 0;
-            var srcY = 0;
-            if (handle is null or 0)
-            {
-                srcX = rect.Left;
-                srcY = rect.Top;
-            }
-
-            if (region is not null)
-            {
-                rect.Left += region.X;
-                rect.Top += region.Y;
-                rect.Right = rect.Left + region.Width;
-                rect.Bottom = rect.Top + region.Height;
-            }
-
-            var captureWidth = rect.Width;
-            var captureHeight = rect.Height;
-            if (captureWidth <= 0 || captureHeight <= 0)
-                throw new ToolException(ErrorCodes.CaptureFailed, "Capture region has zero size.");
-
-            using var bitmap = CaptureBitmap(sourceHandle, srcX, srcY, captureWidth, captureHeight);
-            using var scaled = ApplyScale(bitmap, scale, out var finalWidth, out var finalHeight);
+            using var bitmap = CaptureBitmap(handle);
+            using var cropped = ApplyRegion(bitmap, region);
+            using var scaled = ApplyScale(cropped, scale, out var finalWidth, out var finalHeight);
 
             using var ms = new MemoryStream();
             scaled.Save(ms, ImageFormat.Png);
@@ -77,16 +39,58 @@ public sealed class WindowCapture
         }
     }
 
-    private static Bitmap CaptureBitmap(nint handle, int srcX, int srcY, int width, int height)
+    private static Bitmap CaptureBitmap(nint? handle)
     {
-        var hdcWindow = NativeMethods.GetDC(handle);
+        if (handle is > 0)
+        {
+            if (!NativeMethods.IsWindow((nint)handle.Value))
+                throw new ToolException(ErrorCodes.WindowGone, "Window handle is no longer valid.");
+
+            var wgcBitmap = GraphicsCaptureProvider.TryCaptureWindow((nint)handle.Value);
+            if (wgcBitmap is not null)
+                return wgcBitmap;
+        }
+
+        return CaptureWithBitBlt(handle);
+    }
+
+    private static Bitmap CaptureWithBitBlt(nint? handle)
+    {
+        NativeMethods.RECT rect;
+        nint sourceHandle;
+        var srcX = 0;
+        var srcY = 0;
+
+        if (handle is null or 0)
+        {
+            var width = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN);
+            var height = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN);
+            rect = new NativeMethods.RECT { Left = 0, Top = 0, Right = width, Bottom = height };
+            sourceHandle = NativeMethods.GetDesktopWindow();
+            srcX = rect.Left;
+            srcY = rect.Top;
+        }
+        else
+        {
+            if (!NativeMethods.GetWindowRect((nint)handle.Value, out rect))
+                throw new ToolException(ErrorCodes.CaptureFailed, "Could not read window bounds.");
+
+            sourceHandle = (nint)handle.Value;
+        }
+
+        var captureWidth = rect.Width;
+        var captureHeight = rect.Height;
+        if (captureWidth <= 0 || captureHeight <= 0)
+            throw new ToolException(ErrorCodes.CaptureFailed, "Capture region has zero size.");
+
+        var hdcWindow = NativeMethods.GetDC(sourceHandle);
         var hdcMem = NativeMethods.CreateCompatibleDC(hdcWindow);
-        var hBitmap = NativeMethods.CreateCompatibleBitmap(hdcWindow, width, height);
+        var hBitmap = NativeMethods.CreateCompatibleBitmap(hdcWindow, captureWidth, captureHeight);
         var hOld = NativeMethods.SelectObject(hdcMem, hBitmap);
 
         try
         {
-            if (!NativeMethods.BitBlt(hdcMem, 0, 0, width, height, hdcWindow, srcX, srcY, NativeMethods.SRCCOPY))
+            if (!NativeMethods.BitBlt(hdcMem, 0, 0, captureWidth, captureHeight, hdcWindow, srcX, srcY, NativeMethods.SRCCOPY))
                 throw new ToolException(ErrorCodes.CaptureFailed, "BitBlt capture failed.");
 
             return Image.FromHbitmap(hBitmap);
@@ -96,8 +100,24 @@ public sealed class WindowCapture
             NativeMethods.SelectObject(hdcMem, hOld);
             NativeMethods.DeleteObject(hBitmap);
             NativeMethods.DeleteDC(hdcMem);
-            NativeMethods.ReleaseDC(handle, hdcWindow);
+            NativeMethods.ReleaseDC(sourceHandle, hdcWindow);
         }
+    }
+
+    private static Bitmap ApplyRegion(Bitmap source, CaptureRegion? region)
+    {
+        if (region is null)
+            return new Bitmap(source);
+
+        var x = Math.Clamp(region.X, 0, Math.Max(0, source.Width - 1));
+        var y = Math.Clamp(region.Y, 0, Math.Max(0, source.Height - 1));
+        var width = Math.Clamp(region.Width, 1, source.Width - x);
+        var height = Math.Clamp(region.Height, 1, source.Height - y);
+
+        var cropped = new Bitmap(width, height);
+        using var g = Graphics.FromImage(cropped);
+        g.DrawImage(source, new Rectangle(0, 0, width, height), x, y, width, height, GraphicsUnit.Pixel);
+        return cropped;
     }
 
     private static Bitmap ApplyScale(Bitmap source, double scale, out int width, out int height)

@@ -24,9 +24,12 @@ dotnet run --project src/WinGuiMcp/WinGuiMcp.csproj
 
 ```bash
 dotnet build WinGuiMcp.sln
-# future:
-# dotnet test
+dotnet test tests/WinGuiMcp.Tests/WinGuiMcp.Tests.csproj
 ```
+
+Gate tests launch real Windows apps (Calculator, Notepad, Explorer, Settings, samples). Run on an interactive desktop session; suite uses `[Collection("Phase1Gate")]` with no parallelization.
+
+If `dotnet build` fails because `WinGuiMcp.dll` is locked, reload/stop the MCP server in Cursor first.
 
 ## Agent slash commands
 

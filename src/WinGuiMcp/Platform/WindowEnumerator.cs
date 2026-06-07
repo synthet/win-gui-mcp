@@ -109,16 +109,24 @@ public sealed class WindowEnumerator
             throw new ToolException(ErrorCodes.InvalidArgument, "Either path or appUserModelId is required.");
 
         Process? process = null;
+        var shellUriLaunch = IsShellUri(path);
         try
         {
             if (!string.IsNullOrWhiteSpace(path))
             {
-                var startInfo = new ProcessStartInfo
+                var startInfo = new ProcessStartInfo { UseShellExecute = true };
+
+                if (IsSettingsPath(path))
                 {
-                    FileName = path,
-                    Arguments = args ?? string.Empty,
-                    UseShellExecute = true
-                };
+                    startInfo.FileName = "explorer.exe";
+                    startInfo.Arguments = path;
+                }
+                else
+                {
+                    startInfo.FileName = path;
+                    startInfo.Arguments = args ?? string.Empty;
+                }
+
                 process = Process.Start(startInfo);
             }
             else
@@ -135,11 +143,11 @@ public sealed class WindowEnumerator
             throw new ToolException(ErrorCodes.LaunchFailed, $"Failed to launch application: {ex.Message}");
         }
 
-        if (process is null)
+        if (process is null && !shellUriLaunch)
             throw new ToolException(ErrorCodes.LaunchFailed, "Process.Start returned null.");
 
-        var processId = process.Id;
-        var processNameHint = SafeProcessName(process);
+        var processId = process?.Id ?? -1;
+        var processNameHint = process is null ? string.Empty : SafeProcessName(process);
 
         var deadline = DateTime.UtcNow.AddMilliseconds(waitForWindowMs);
         while (DateTime.UtcNow < deadline)
@@ -150,7 +158,9 @@ public sealed class WindowEnumerator
 
             try
             {
-                if (!PreferProcessDiscovery(path) &&
+                if (processId > 0 &&
+                    !PreferProcessDiscovery(path) &&
+                    process is not null &&
                     !process.HasExited &&
                     process.MainWindowHandle != IntPtr.Zero)
                 {
@@ -178,7 +188,9 @@ public sealed class WindowEnumerator
     {
         var windows = ListWindows(null, includeMinimized: true);
 
-        var byLauncherPid = windows.FirstOrDefault(w => w.Pid == launcherPid);
+        var byLauncherPid = launcherPid > 0
+            ? windows.FirstOrDefault(w => w.Pid == launcherPid)
+            : null;
         if (byLauncherPid is not null)
             return ToLaunchResult(byLauncherPid);
 
@@ -197,7 +209,7 @@ public sealed class WindowEnumerator
                 return ToLaunchResult(byProcess);
         }
 
-        if (IsCalculatorPath(path))
+        if (IsCalculatorPath(path) || IsSettingsPath(path))
         {
             var frameHost = windows
                 .Where(w => w.ProcessName.Equals("ApplicationFrameHost", StringComparison.OrdinalIgnoreCase))
@@ -229,6 +241,9 @@ public sealed class WindowEnumerator
         if (string.IsNullOrWhiteSpace(path))
             return false;
 
+        if (path.StartsWith("ms-settings", StringComparison.OrdinalIgnoreCase))
+            return true;
+
         var exe = Path.GetFileName(path);
         return exe.Equals("calc.exe", StringComparison.OrdinalIgnoreCase);
     }
@@ -244,6 +259,9 @@ public sealed class WindowEnumerator
         if (string.IsNullOrWhiteSpace(path))
             return null;
 
+        if (path.StartsWith("ms-settings", StringComparison.OrdinalIgnoreCase))
+            return "SystemSettings";
+
         return Path.GetFileNameWithoutExtension(path).ToLowerInvariant() switch
         {
             "calc" => "CalculatorApp",
@@ -258,10 +276,14 @@ public sealed class WindowEnumerator
         if (string.IsNullOrWhiteSpace(path))
             return null;
 
+        if (path.StartsWith("ms-settings", StringComparison.OrdinalIgnoreCase))
+            return "settings";
+
         return Path.GetFileNameWithoutExtension(path).ToLowerInvariant() switch
         {
             "calc" => "calc",
             "notepad" => "notepad",
+            "explorer" => "explorer",
             _ => null
         };
     }
@@ -269,6 +291,21 @@ public sealed class WindowEnumerator
     private static bool IsCalculatorPath(string? path) =>
         !string.IsNullOrWhiteSpace(path) &&
         Path.GetFileName(path).Equals("calc.exe", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsSettingsPath(string? path) =>
+        !string.IsNullOrWhiteSpace(path) &&
+        path.StartsWith("ms-settings", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsShellUri(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        if (IsSettingsPath(path))
+            return true;
+
+        return path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase);
+    }
 
     public static string GetWindowTitle(nint handle)
     {

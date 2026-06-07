@@ -60,6 +60,63 @@ public sealed class UemNode
     };
 }
 
+public sealed class GetPropertiesEnvelope
+{
+    [JsonPropertyName("ok")]
+    public bool Ok { get; init; } = true;
+
+    [JsonPropertyName("ref")]
+    public required string Ref { get; init; }
+
+    [JsonPropertyName("source")]
+    public required string Source { get; init; }
+
+    [JsonPropertyName("role")]
+    public required string Role { get; init; }
+
+    [JsonPropertyName("name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; init; }
+
+    [JsonPropertyName("automationId")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AutomationId { get; init; }
+
+    [JsonPropertyName("className")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ClassName { get; init; }
+
+    [JsonPropertyName("value")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Value { get; init; }
+
+    [JsonPropertyName("enabled")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Enabled { get; init; }
+
+    [JsonPropertyName("states")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? States { get; init; }
+
+    [JsonPropertyName("patterns")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? Patterns { get; init; }
+
+    public static GetPropertiesEnvelope From(UemNode node) => new()
+    {
+        Ref = node.Ref,
+        Source = node.Source,
+        Role = node.Role,
+        Name = node.Name,
+        AutomationId = node.AutomationId,
+        ClassName = node.ClassName,
+        Value = node.Value,
+        Enabled = node.Enabled,
+        States = node.States is null ? null : new List<string>(node.States),
+        Patterns = node.Patterns is null ? null : new List<string>(node.Patterns)
+    };
+}
+
 public sealed class SnapshotEnvelope
 {
     [JsonPropertyName("ok")]
