@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows GUI MCP: Research & Design Specs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Warm Slate & Neutral Sand -->
+    <!-- Application Structure Plan: A single-page dashboard with a side navigation menu. This structure was chosen because it allows users to digest a complex technical research report in distinct, logical chunks (Overview, System APIs, Vision Models, Design Specs) without feeling overwhelmed. It mimics developer documentation, which is the most usable format for this domain. -->
+    <!-- Visualization & Content Choices: 
+         1. Overview -> Text & HTML Flowchart -> Interaction: Hover states -> Justification: Explains core concept visually without external images. Library: Tailwind/HTML.
+         2. API Review -> Interactive Grid/Cards -> Interaction: Filter by low/high level -> Justification: Allows quick comparison of system APIs. Library: Vanilla JS/Tailwind.
+         3. Vision Models -> Scatter Chart (Speed vs Accuracy) -> Interaction: Tooltips -> Justification: Best way to compare lightweight models quantitatively. Library: Chart.js.
+         4. Design Specs -> Text Blocks & Interactive Architecture -> Interaction: Clickable components revealing details -> Justification: Engages the user in understanding the system flow. Library: Vanilla JS/Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FAFAFA; /* Warm neutral background */
+            color: #334155; /* Slate 700 */
+        }
+        
+        /* Chart Container Styling - Mandatory Requirement */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        .nav-active {
+            background-color: #E2E8F0;
+            color: #0F172A;
+            border-left: 4px solid #475569;
+        }
+
+        .arch-node {
+            transition: all 0.3s ease;
+        }
+        .arch-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col h-full shadow-sm z-10">
+        <div class="p-6">
+            <h1 class="text-xl font-bold text-slate-800 tracking-tight leading-tight">WinGUI MCP<br><span class="text-sm font-normal text-slate-500">Research & Specs</span></h1>
+        </div>
+        <nav class="flex-1 mt-4">
+            <ul class="space-y-1" id="nav-menu">
+                <li><button onclick="navigate('overview')" class="nav-btn w-full text-left px-6 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 nav-active" data-target="overview">Overview & Context</button></li>
+                <li><button onclick="navigate('apis')" class="nav-btn w-full text-left px-6 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50" data-target="apis">Windows System APIs</button></li>
+                <li><button onclick="navigate('vision')" class="nav-btn w-full text-left px-6 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50" data-target="vision">Computer Vision Models</button></li>
+                <li><button onclick="navigate('specs')" class="nav-btn w-full text-left px-6 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50" data-target="specs">Design Document</button></li>
+                <li><button onclick="navigate('references')" class="nav-btn w-full text-left px-6 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50" data-target="references">References & Harnesses</button></li>
+            </ul>
+        </nav>
+        <div class="p-6 border-t border-slate-100 text-xs text-slate-400">
+            Internal Research Report<br>v1.0.0
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative p-8 md:p-12" id="main-content">
+        
+        <!-- SECTION: OVERVIEW -->
+        <section id="overview" class="content-section animate-fade-in block">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">The Need for a Windows GUI MCP</h2>
+                <p class="text-lg text-slate-600 mb-8 leading-relaxed">
+                    This section introduces the core concept. While tools like Playwright and Puppeteer have revolutionized browser automation, the underlying Windows Desktop OS lacks a unified, AI-friendly Model Context Protocol (MCP) server. Our goal is to design an architecture that allows LLMs to control the Windows GUI as effortlessly as a browser.
+                </p>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-8">
+                    <h3 class="text-xl font-semibold mb-6 border-b border-slate-100 pb-2">Conceptual Architecture</h3>
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-center">
+                        <!-- HTML based diagram (No SVG) -->
+                        <div class="arch-node bg-slate-800 text-white p-4 rounded-lg w-full md:w-1/4">
+                            <div class="font-bold mb-1">LLM Client</div>
+                            <div class="text-xs text-slate-300">Claude / GPT-4</div>
+                        </div>
+                        <div class="text-slate-400 text-2xl font-bold">&#8594;</div>
+                        <div class="arch-node bg-blue-600 text-white p-4 rounded-lg w-full md:w-1/4">
+                            <div class="font-bold mb-1">MCP Server</div>
+                            <div class="text-xs text-blue-100">Standardized API</div>
+                        </div>
+                        <div class="text-slate-400 text-2xl font-bold">&#8594;</div>
+                        <div class="arch-node bg-emerald-600 text-white p-4 rounded-lg w-full md:w-1/4">
+                            <div class="font-bold mb-1">Translation Engine</div>
+                            <div class="text-xs text-emerald-100">Vision + OS APIs</div>
+                        </div>
+                        <div class="text-slate-400 text-2xl font-bold">&#8594;</div>
+                        <div class="arch-node bg-slate-200 text-slate-800 p-4 rounded-lg w-full md:w-1/4 border border-slate-300">
+                            <div class="font-bold mb-1">Windows OS</div>
+                            <div class="text-xs text-slate-500">Desktop GUI</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-2xl mb-2">&#128269;</div>
+                        <h4 class="font-bold text-slate-800 mb-2">The Problem</h4>
+                        <p class="text-sm text-slate-600">Windows applications use heterogeneous frameworks (Win32, WPF, UWP, Electron). Traditional automation relies on fragile DOM-like trees (UIAutomation) which often fail on custom rendered UIs.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-2xl mb-2">&#128161;</div>
+                        <h4 class="font-bold text-slate-800 mb-2">The Solution</h4>
+                        <p class="text-sm text-slate-600">A hybrid approach combining Microsoft's UIAutomation (for structured apps) with lightweight Computer Vision (for unstructured/custom apps) exposed via a clean, stateless MCP interface.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: APIs -->
+        <section id="apis" class="content-section hidden animate-fade-in">
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Windows System API Review</h2>
+                <p class="text-lg text-slate-600 mb-8 leading-relaxed">
+                    Understanding the tools available natively to interact with the Windows Desktop. We categorize these into Low-Level System APIs and High-Level Wrapper Libraries. 
+                    <br><br><strong>Interact:</strong> Click the filters below to toggle API categories.
+                </p>
+
+                <!-- Filter Controls -->
+                <div class="flex gap-2 mb-6">
+                    <button onclick="filterAPI('all')" class="px-4 py-2 text-sm font-medium rounded-full bg-slate-800 text-white transition-colors" id="btn-all">All APIs</button>
+                    <button onclick="filterAPI('low')" class="px-4 py-2 text-sm font-medium rounded-full bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors" id="btn-low">Low-Level</button>
+                    <button onclick="filterAPI('high')" class="px-4 py-2 text-sm font-medium rounded-full bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors" id="btn-high">High-Level</button>
+                </div>
+
+                <!-- API Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="api-grid">
+                    <!-- Cards will be injected by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: VISION MODELS -->
+        <section id="vision" class="content-section hidden animate-fade-in">
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Lightweight CV Models for UI Understanding</h2>
+                <p class="text-lg text-slate-600 mb-8 leading-relaxed">
+                    When system APIs fail (e.g., in game engines, Citrix environments, or custom-rendered Electron apps), we must rely on pixels. This section reviews lightweight vision models capable of understanding GUI structure, layout, and text.
+                </p>
+
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+                    <h3 class="text-lg font-bold mb-4 text-slate-700">Model Performance Matrix (Latency vs Bounding Box Accuracy)</h3>
+                    <!-- Mandatory Chart Container -->
+                    <div class="chart-container">
+                        <canvas id="visionChart"></canvas>
+                    </div>
+                    <p class="text-xs text-center text-slate-500 mt-4">Top right is optimal. Size of bubble represents relative VRAM footprint (Smaller is better for local harness).</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-lg border-l-4 border-blue-500 shadow-sm flex items-start gap-4">
+                        <div class="text-2xl">&#128065;</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">OmniParser (Microsoft)</h4>
+                            <p class="text-sm text-slate-600 mt-1">A pure vision-based GUI agent that converts UI screenshots into structured elements. Extremely accurate but requires moderate GPU resources. Ideal for a heavy-duty local MCP server.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-lg border-l-4 border-emerald-500 shadow-sm flex items-start gap-4">
+                        <div class="text-2xl">&#128207;</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">YOLO-UI / UI-ED</h4>
+                            <p class="text-sm text-slate-600 mt-1">Custom trained YOLOv8 models designed specifically to detect standard UI widgets (buttons, dropdowns, inputs). Ultra-fast (sub 50ms inference), low VRAM, but requires separate OCR (like Tesseract/PaddleOCR) for text reading.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: DESIGN SPECS -->
+        <section id="specs" class="content-section hidden animate-fade-in">
+            <div class="max-w-5xl mx-auto">
+                <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+                    <strong>Superseded.</strong> Tool names and schemas in this dashboard (e.g. <code>get_ui_tree</code>, <code>click_element</code>) are outdated. Use the normative <a href="../tools.md" class="underline font-semibold">tools.md</a> spec for WinGuiMcp.
+                </div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">High-Level Design Document (Specs)</h2>
+                <p class="text-lg text-slate-600 mb-8 leading-relaxed">
+                    The architecture of a "Playwright-for-Windows" MCP server. The server exposes tools to the LLM allowing contextual understanding and manipulation of the desktop environment.
+                </p>
+
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <!-- Left: Interactive API Definition -->
+                    <div class="w-full lg:w-1/2">
+                        <h3 class="text-xl font-semibold mb-4 text-slate-800">Proposed MCP Tools API</h3>
+                        <div class="space-y-3" id="api-spec-list">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Tool Details -->
+                    <div class="w-full lg:w-1/2 bg-slate-800 rounded-xl shadow-lg p-6 text-slate-300">
+                        <h3 class="text-lg font-semibold text-white mb-4 border-b border-slate-600 pb-2">Tool Specification Details</h3>
+                        <div id="spec-detail-display" class="font-mono text-sm leading-relaxed">
+                            <span class="text-slate-500 italic">Select a tool from the list to view its input schema and backend execution strategy.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: REFERENCES -->
+        <section id="references" class="content-section hidden animate-fade-in">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Existing AI Harnesses & Tech Articles</h2>
+                <p class="text-lg text-slate-600 mb-8 leading-relaxed">
+                    Review of current open-source harnesses and foundational research papers governing desktop OS automation via LLMs.
+                </p>
+
+                <div class="grid gap-6">
+                    <!-- Harnesses -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-slate-100 px-6 py-3 border-b border-slate-200 font-semibold text-slate-700">Open Source Desktop Harnesses</div>
+                        <ul class="divide-y divide-slate-100">
+                            <li class="p-6">
+                                <h4 class="font-bold text-blue-600 mb-1">Microsoft UFO (UI-Focused Agent)</h4>
+                                <p class="text-sm text-slate-600">A dual-agent framework for Windows OS interaction. Uses UIAutomation extensively. Heavily relies on GPT-4V. Highly relevant codebase for structuring the MCP translation layer.</p>
+                            </li>
+                            <li class="p-6">
+                                <h4 class="font-bold text-blue-600 mb-1">OSWorld Benchmark</h4>
+                                <p class="text-sm text-slate-600">Provides a multimodal benchmarking environment. Features a VNC-based observation space. Excellent for testing the reliability of the proposed MCP server.</p>
+                            </li>
+                            <li class="p-6">
+                                <h4 class="font-bold text-blue-600 mb-1">Open Interpreter</h4>
+                                <p class="text-sm text-slate-600">Currently focuses on CLI execution but has experimental computer vision extensions for desktop manipulation. Good reference for Python-to-OS security sandboxing.</p>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Articles -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-slate-100 px-6 py-3 border-b border-slate-200 font-semibold text-slate-700">Key Research Papers</div>
+                        <ul class="divide-y divide-slate-100 text-sm">
+                            <li class="p-4 flex gap-3 items-start">
+                                <div class="text-slate-400 mt-1">&#128196;</div>
+                                <div><strong class="text-slate-800">"OmniParser for Pure Vision Based GUI Agent" (Microsoft, 2024)</strong> - Discusses extracting UI DOM entirely from pixels, bypassing the need for native Windows accessibility APIs.</div>
+                            </li>
+                            <li class="p-4 flex gap-3 items-start">
+                                <div class="text-slate-400 mt-1">&#128196;</div>
+                                <div><strong class="text-slate-800">"Ferret-UI: Grounded Mobile UI Understanding" (Apple, 2024)</strong> - Principles of UI understanding that can be ported from mobile to Windows desktop environments.</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            activeTab: 'overview',
+            apiFilter: 'all',
+            chartInstance: null
+        };
+
+        // --- Data Storage ---
+        const apiData = [
+            { id: 'win32', name: 'Win32 API (user32.dll)', level: 'low', desc: 'Direct memory/window handle manipulation. SendMessage(), PostMessage(), mouse_event(). Fast but fragile to UI changes.', icon: '&#9881;' },
+            { id: 'uia', name: 'UI Automation (UIA)', level: 'low', desc: 'Microsofts accessibility framework. Generates a tree of UI elements. robust for standard apps, fails on custom canvas renders.', icon: '&#128421;' },
+            { id: 'pyautogui', name: 'PyAutoGUI', level: 'high', desc: 'Python wrapper for cross-platform mouse/keyboard control. Purely coordinate based. No semantic understanding.', icon: '&#128433;' },
+            { id: 'winappdriver', name: 'WinAppDriver (Appium)', level: 'high', desc: 'Selenium-like testing tool for Windows. Uses UIA under the hood. Good for structured QA, slow for autonomous AI agents.', icon: '&#128640;' },
+            { id: 'pywinauto', name: 'Pywinauto', level: 'high', desc: 'Python library that wraps both Win32 and UIA. High-level abstractions for dialogs, menus, and controls.', icon: '&#128187;' }
+        ];
+
+        const mcpToolsSpec = [
+            {
+                name: 'get_ui_tree',
+                desc: 'Retrieves the current accessibility DOM of the active window.',
+                schema: '{\n  "include_bounds": "boolean",\n  "fallback_to_vision": "boolean"\n}',
+                backend: 'Primary: UIAutomation API (Fast)\nFallback: OmniParser local inference (Slow but robust)\nReturns a JSON representation of interactive elements with ID refs.'
+            },
+            {
+                name: 'click_element',
+                desc: 'Clicks an element based on semantic ID or textual description.',
+                schema: '{\n  "element_id": "string",\n  "text_matcher": "string",\n  "click_type": "left|right|double"\n}',
+                backend: 'Locates bounding box via UIA Tree or CV Engine. Calculates centroid. Invokes Win32 user32.dll mouse_event() to simulate hardware click.'
+            },
+            {
+                name: 'type_text',
+                desc: 'Sends keystrokes to the currently focused window.',
+                schema: '{\n  "text": "string",\n  "submit": "boolean"\n}',
+                backend: 'Translates string to virtual key codes. Uses SendInput() via ctypes to bypass high-level application input hooks.'
+            },
+            {
+                name: 'screenshot_region',
+                desc: 'Captures screen region or specific application window.',
+                schema: '{\n  "window_title": "string",\n  "bbox": [x, y, w, h]\n}',
+                backend: 'Uses Windows Graphics Capture API (DirectX based) for low-latency, zero-tear screen grabbing. Encodes to Base64.'
+            }
+        ];
+
+        // --- Core Interaction Handling & Functional Navigation ---
+        function navigate(targetId) {
+            // Update state
+            state.activeTab = targetId;
+
+            // Handle UI Nav active states
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target === targetId) {
+                    btn.classList.add('nav-active', 'bg-slate-200');
+                    btn.classList.remove('hover:bg-slate-50');
+                } else {
+                    btn.classList.remove('nav-active', 'bg-slate-200');
+                    btn.classList.add('hover:bg-slate-50');
+                }
+            });
+
+            // Handle content display
+            document.querySelectorAll('.content-section').forEach(section => {
+                if(section.id === targetId) {
+                    section.classList.remove('hidden');
+                    // Add slight fade in animation via tailwind classes (handled in css/html natively mostly, just trigger reflow)
+                    section.style.opacity = '0';
+                    setTimeout(() => section.style.opacity = '1', 10);
+                } else {
+                    section.classList.add('hidden');
+                }
+            });
+
+            // Trigger specific page renders
+            if(targetId === 'vision' && !state.chartInstance) {
+                renderChart();
+            }
+        }
+
+        // --- View Logic: APIs ---
+        function filterAPI(level) {
+            state.apiFilter = level;
+            
+            // Update buttons
+            ['all', 'low', 'high'].forEach(btnId => {
+                const btn = document.getElementById(`btn-${btnId}`);
+                if(btnId === level) {
+                    btn.classList.replace('bg-white', 'bg-slate-800');
+                    btn.classList.replace('text-slate-600', 'text-white');
+                } else {
+                    btn.classList.replace('bg-slate-800', 'bg-white');
+                    btn.classList.replace('text-white', 'text-slate-600');
+                }
+            });
+
+            // Render Grid
+            const grid = document.getElementById('api-grid');
+            grid.innerHTML = '';
+            
+            const filtered = apiData.filter(item => level === 'all' || item.level === level);
+            
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-xl border border-slate-200 shadow-sm arch-node flex flex-col h-full';
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-xl">${item.icon}</div>
+                        <h4 class="font-bold text-slate-800 leading-tight">${item.name}</h4>
+                    </div>
+                    <span class="inline-block px-2 py-1 bg-${item.level === 'low' ? 'blue' : 'emerald'}-100 text-${item.level === 'low' ? 'blue' : 'emerald'}-800 text-xs font-semibold rounded-full w-max mb-3 uppercase tracking-wider">${item.level} Level</span>
+                    <p class="text-sm text-slate-600 flex-1">${item.desc}</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // --- View Logic: Design Specs ---
+        function renderSpecs() {
+            const list = document.getElementById('api-spec-list');
+            list.innerHTML = '';
+
+            mcpToolsSpec.forEach((tool, index) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 rounded-lg border ${index === 0 ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'} transition-colors`;
+                btn.innerHTML = `
+                    <div class="font-mono font-bold text-slate-800 mb-1">${tool.name}()</div>
+                    <div class="text-sm text-slate-600">${tool.desc}</div>
+                `;
+                
+                btn.onclick = () => {
+                    // Reset all buttons
+                    Array.from(list.children).forEach(c => {
+                        c.classList.remove('border-blue-500', 'bg-blue-50');
+                        c.classList.add('border-slate-200', 'bg-white');
+                    });
+                    // Highlight selected
+                    btn.classList.add('border-blue-500', 'bg-blue-50');
+                    btn.classList.remove('border-slate-200', 'bg-white');
+                    
+                    // Update Details Pane
+                    updateSpecDetails(tool);
+                };
+                
+                list.appendChild(btn);
+            });
+
+            // Initialize first
+            updateSpecDetails(mcpToolsSpec[0]);
+        }
+
+        function updateSpecDetails(tool) {
+            const display = document.getElementById('spec-detail-display');
+            display.innerHTML = `
+                <div class="mb-4">
+                    <span class="text-emerald-400 font-bold mb-1 block">// Input Schema</span>
+                    <pre class="bg-slate-900 p-3 rounded border border-slate-700 text-blue-300">${tool.schema}</pre>
+                </div>
+                <div>
+                    <span class="text-emerald-400 font-bold mb-1 block">// Execution Engine Strategy</span>
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700 text-slate-300 whitespace-pre-wrap">${tool.backend}</div>
+                </div>
+            `;
+        }
+
+        // --- View Logic: Vision Chart (Chart.js) ---
+        function renderChart() {
+            const ctx = document.getElementById('visionChart').getContext('2d');
+            
+            // Scatter Plot: X = Latency (ms), Y = Accuracy (%), r = VRAM usage
+            const data = {
+                datasets: [{
+                    label: 'OmniParser',
+                    data: [{ x: 800, y: 92, r: 25 }],
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)', // Blue
+                    borderColor: 'rgb(59, 130, 246)',
+                },
+                {
+                    label: 'ScreenAI (Google)',
+                    data: [{ x: 450, y: 88, r: 15 }],
+                    backgroundColor: 'rgba(16, 185, 129, 0.7)', // Emerald
+                    borderColor: 'rgb(16, 185, 129)',
+                },
+                {
+                    label: 'YOLO-UI (Custom)',
+                    data: [{ x: 45, y: 78, r: 8 }],
+                    backgroundColor: 'rgba(245, 158, 11, 0.7)', // Amber
+                    borderColor: 'rgb(245, 158, 11)',
+                },
+                {
+                    label: 'Tesseract OCR Only',
+                    data: [{ x: 150, y: 40, r: 5 }],
+                    backgroundColor: 'rgba(100, 116, 139, 0.7)', // Slate
+                    borderColor: 'rgb(100, 116, 139)',
+                }]
+            };
+
+            state.chartInstance = new Chart(ctx, {
+                type: 'bubble',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Required for proper container fitting
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw.y}% Acc, ${context.raw.x}ms`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Inference Latency (ms) - Lower is Better', font: { weight: 'bold'} },
+                            reverse: true // Put faster on the right conceptually, or leave standard. We'll reverse so right is "better" speed
+                        },
+                        y: {
+                            title: { display: true, text: 'Bounding Box Accuracy (%)', font: { weight: 'bold'} },
+                            min: 30, max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            filterAPI('all');
+            renderSpecs();
+            // Chart renders lazily on tab click
+        });
+
+    </script>
+</body>
+</html>

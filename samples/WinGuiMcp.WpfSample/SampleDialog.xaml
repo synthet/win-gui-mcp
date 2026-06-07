@@ -1,0 +1,14 @@
+<Window x:Class="WinGuiMcp.WpfSample.SampleDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sample Dialog" Height="180" Width="360"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="16">
+    <TextBlock Text="Enter a value:" Margin="0,0,0,8" />
+    <TextBox x:Name="InputBox" AutomationProperties.AutomationId="dialogInput" Margin="0,0,0,12" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+      <Button Content="OK" Width="80" Margin="0,0,8,0" IsDefault="True" Click="Ok_Click" AutomationProperties.AutomationId="dialogOk" />
+      <Button Content="Cancel" Width="80" IsCancel="True" AutomationProperties.AutomationId="dialogCancel" />
+    </StackPanel>
+  </StackPanel>
+</Window>

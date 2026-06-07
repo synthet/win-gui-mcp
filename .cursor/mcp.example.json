@@ -1,0 +1,10 @@
+{
+  "_comment": "Copy to mcp.json (gitignored). Build first: dotnet build WinGuiMcp.sln. Reload MCP in Cursor.",
+  "mcpServers": {
+    "win-gui-mcp": {
+      "command": "dotnet",
+      "args": ["run", "--project", "src/WinGuiMcp/WinGuiMcp.csproj", "--no-build"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}

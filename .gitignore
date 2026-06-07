@@ -1,0 +1,46 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+publish/
+
+# NuGet
+*.nupkg
+**/packages/
+project.lock.json
+project.fragment.lock.json
+
+# Test results
+[Tt]est[Rr]esults/
+*.trx
+*.coverage
+*.coveragexml
+
+# User-specific MCP config (copy from mcp.example.json locally)
+.cursor/mcp.json
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+secrets.json
+**/appsettings.*.local.json
+
+# IDE
+.vs/
+.idea/
+*.sln.iml
+*.user
+*.suo
+*.rsuser
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
