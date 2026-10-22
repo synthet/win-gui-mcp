@@ -68,11 +68,17 @@ public sealed class ToolService
         return new { ok = true, handle, focused = true };
     }
 
-    public SnapshotEnvelope Snapshot(int handle, string scope, string detail, bool includeOffscreen)
+    public SnapshotEnvelope Snapshot(
+        int handle,
+        string scope,
+        string detail,
+        bool includeOffscreen,
+        string? rootRef = null,
+        int maxDepth = 32)
     {
         _session.EnsureNotExpired();
         _windowEnumerator.ValidateHandle(handle);
-        return _snapshotBuilder.Build(_session, handle, scope, detail, includeOffscreen);
+        return _snapshotBuilder.Build(_session, handle, scope, detail, includeOffscreen, rootRef, maxDepth);
     }
 
     public object FindElement(int handle, string by, string value, int nth, string match)
@@ -187,6 +193,81 @@ public sealed class ToolService
         };
     }
 
+    public object Toggle(string refValue, bool includeSnapshot)
+    {
+        _session.EnsureNotExpired();
+        var (windowIndex, _) = RefFormat.Parse(refValue);
+        var snapshotId = _session.GetCurrentSnapshotId(windowIndex);
+        var entry = _session.RefTable.Resolve(refValue, snapshotId);
+        var result = _patternExecutor.Toggle(entry);
+        _session.TouchActivity();
+        return BuildActionResponse(result.Method, refValue, includeSnapshot);
+    }
+
+    public object Select(string refValue, bool includeSnapshot)
+    {
+        _session.EnsureNotExpired();
+        var (windowIndex, _) = RefFormat.Parse(refValue);
+        var snapshotId = _session.GetCurrentSnapshotId(windowIndex);
+        var entry = _session.RefTable.Resolve(refValue, snapshotId);
+        var result = _patternExecutor.Select(entry);
+        _session.TouchActivity();
+        return BuildActionResponse(result.Method, refValue, includeSnapshot);
+    }
+
+    public object Expand(string refValue, bool includeSnapshot)
+    {
+        _session.EnsureNotExpired();
+        var (windowIndex, _) = RefFormat.Parse(refValue);
+        var snapshotId = _session.GetCurrentSnapshotId(windowIndex);
+        var entry = _session.RefTable.Resolve(refValue, snapshotId);
+        var result = _patternExecutor.Expand(entry);
+        _session.TouchActivity();
+        return BuildActionResponse(result.Method, refValue, includeSnapshot);
+    }
+
+    public object Collapse(string refValue, bool includeSnapshot)
+    {
+        _session.EnsureNotExpired();
+        var (windowIndex, _) = RefFormat.Parse(refValue);
+        var snapshotId = _session.GetCurrentSnapshotId(windowIndex);
+        var entry = _session.RefTable.Resolve(refValue, snapshotId);
+        var result = _patternExecutor.Collapse(entry);
+        _session.TouchActivity();
+        return BuildActionResponse(result.Method, refValue, includeSnapshot);
+    }
+
+    public object GetText(string refValue)
+    {
+        _session.EnsureNotExpired();
+        var (windowIndex, _) = RefFormat.Parse(refValue);
+        var snapshotId = _session.GetCurrentSnapshotId(windowIndex);
+        var entry = _session.RefTable.Resolve(refValue, snapshotId);
+        var text = _patternExecutor.GetText(entry);
+        _session.TouchActivity();
+        return new { ok = true, @ref = refValue, text };
+    }
+
+    public object InspectAt(int x, int y)
+    {
+        _session.EnsureNotExpired();
+        _session.TouchActivity();
+        var element = _snapshotBuilder.Automation.FromPoint(new System.Drawing.Point(x, y));
+        if (element is null)
+            throw new ToolException(ErrorCodes.ElementNotFound, $"No element found at point ({x}, {y}).");
+
+        return new
+        {
+            ok = true,
+            role = element.ControlType.ToString(),
+            name = element.Name,
+            automationId = element.AutomationId,
+            className = element.ClassName,
+            isEnabled = element.IsEnabled,
+            isOffscreen = element.IsOffscreen
+        };
+    }
+
     public object WaitFor(int handle, string condition, string? target, int timeoutMs)
     {
         _session.EnsureNotExpired();
@@ -197,7 +278,7 @@ public sealed class ToolService
 
         while (sw.ElapsedMilliseconds <= timeoutMs)
         {
-            if (!NativeMethods.IsWindow(handle))
+            if (condition != "window-closed" && !NativeMethods.IsWindow(handle))
                 throw new ToolException(ErrorCodes.WindowGone, "Window closed while waiting.");
 
             try
@@ -225,43 +306,152 @@ public sealed class ToolService
         return condition switch
         {
             "window-active" when NativeMethods.GetForegroundWindow() == (nint)handle => ("active", "Window", "active"),
-            "element-exists" => FindForWait(handle, target),
-            "element-enabled" => FindEnabledForWait(handle, target),
-            "text-visible" => FindForWait(handle, target),
+            "window-closed" when !NativeMethods.IsWindow(handle) => ("closed", "Window", "closed"),
+            "element-exists" => FindForWait(handle, target, requireEnabled: false, requireVisible: false),
+            "element-enabled" => FindForWait(handle, target, requireEnabled: true, requireVisible: false),
+            "text-visible" => FindForWait(handle, target, requireEnabled: false, requireVisible: true),
+            "element-gone" => FindGoneForWait(handle, target),
+            "element-hidden" => FindGoneForWait(handle, target),
+            "value-equals" => FindValueEqualsForWait(handle, target),
             _ => throw new ToolException(ErrorCodes.InvalidArgument, $"Unknown condition: {condition}")
         };
     }
 
-    private (string Ref, string Role, string? Name)? FindForWait(int handle, string? target)
+    private (string Ref, string Role, string? Name)? FindForWait(int handle, string? target, bool requireEnabled, bool requireVisible)
     {
         if (string.IsNullOrWhiteSpace(target))
             throw new ToolException(ErrorCodes.InvalidArgument, "target is required for this condition.");
 
-        var envelope = Snapshot(handle, "window", "control", includeOffscreen: true);
-        var windowIndex = _session.TryGetWindowIndex(handle)!;
-        var snapshotId = Guid.Parse(envelope.SnapshotId);
+        var windowIndex = _session.TryGetWindowIndex(handle);
+        var snapshotId = windowIndex.HasValue ? _session.GetCurrentSnapshotId(windowIndex.Value) : null;
 
+        // 1. Fast check if already available in current ref table
+        if (windowIndex.HasValue && snapshotId.HasValue)
+        {
+            try
+            {
+                var entry = _session.RefTable.FindElement(windowIndex.Value, snapshotId.Value, "name", target, "contains", 0);
+                if ((!requireEnabled || entry.Element.IsEnabled) && (!requireVisible || !entry.Element.IsOffscreen))
+                    return (entry.Ref, entry.Node.Role, entry.Node.Name);
+            }
+            catch (ToolException)
+            {
+                // Not in current table; inspect live tree below
+            }
+        }
+
+        // 2. Targeted live UIA search without full snapshot rebuild
+        FlaUI.Core.AutomationElements.AutomationElement? root;
         try
         {
-            var entry = _session.RefTable.FindElement(windowIndex.Value, snapshotId, "name", target, "contains", 0);
-            return (entry.Ref, entry.Node.Role, entry.Node.Name);
+            root = _snapshotBuilder.Automation.FromHandle((nint)handle);
+            if (root is null) return null;
         }
-        catch (ToolException ex) when (ex.Error.Code == ErrorCodes.ElementNotFound)
+        catch
         {
             return null;
+        }
+
+        var cf = _snapshotBuilder.Automation.ConditionFactory;
+        var match = root.FindFirstDescendant(cf.ByName(target).Or(cf.ByAutomationId(target)));
+        if (match is null)
+        {
+            match = root.FindAllDescendants().FirstOrDefault(e =>
+                SafeProbe(() => e.Name?.Contains(target, StringComparison.OrdinalIgnoreCase) == true) ||
+                SafeProbe(() => e.AutomationId?.Contains(target, StringComparison.OrdinalIgnoreCase) == true));
+        }
+
+        if (match is null)
+            return null;
+
+        if (requireEnabled && !match.IsEnabled)
+            return null;
+
+        if (requireVisible && match.IsOffscreen)
+            return null;
+
+        // Take a single snapshot only upon successful match to assign fresh valid refs
+        var envelope = Snapshot(handle, "window", "control", includeOffscreen: true);
+        var registeredWinIdx = _session.TryGetWindowIndex(handle)!;
+        var snapGuid = Guid.Parse(envelope.SnapshotId);
+        try
+        {
+            var freshEntry = _session.RefTable.FindElement(registeredWinIdx.Value, snapGuid, "name", target, "contains", 0);
+            return (freshEntry.Ref, freshEntry.Node.Role, freshEntry.Node.Name);
+        }
+        catch
+        {
+            return ($"w{registeredWinIdx.Value}e_wait", match.ControlType.ToString(), match.Name);
         }
     }
 
-    private (string Ref, string Role, string? Name)? FindEnabledForWait(int handle, string? target)
+    private (string Ref, string Role, string? Name)? FindGoneForWait(int handle, string? target)
     {
-        var found = FindForWait(handle, target);
-        if (found is null)
-            return null;
+        if (string.IsNullOrWhiteSpace(target))
+            throw new ToolException(ErrorCodes.InvalidArgument, "target is required for this condition.");
 
-        var (windowIndex, _) = RefFormat.Parse(found.Value.Ref);
-        var snapshotId = _session.GetCurrentSnapshotId(windowIndex);
-        var entry = _session.RefTable.Resolve(found.Value.Ref, snapshotId);
-        return entry.Element.IsEnabled ? found : null;
+        FlaUI.Core.AutomationElements.AutomationElement? root;
+        try
+        {
+            root = _snapshotBuilder.Automation.FromHandle((nint)handle);
+            if (root is null) return ("gone", "Element", target);
+        }
+        catch
+        {
+            return ("gone", "Element", target);
+        }
+
+        var cf = _snapshotBuilder.Automation.ConditionFactory;
+        var match = root.FindFirstDescendant(cf.ByName(target).Or(cf.ByAutomationId(target)));
+        if (match is null || match.IsOffscreen)
+            return ("gone", "Element", target);
+
+        return null;
+    }
+
+    private (string Ref, string Role, string? Name)? FindValueEqualsForWait(int handle, string? target)
+    {
+        if (string.IsNullOrWhiteSpace(target))
+            throw new ToolException(ErrorCodes.InvalidArgument, "target is required for this condition.");
+
+        FlaUI.Core.AutomationElements.AutomationElement? root;
+        try
+        {
+            root = _snapshotBuilder.Automation.FromHandle((nint)handle);
+            if (root is null) return null;
+        }
+        catch
+        {
+            return null;
+        }
+
+        var match = root.FindAllDescendants().FirstOrDefault(e =>
+            SafeProbe(() => e.Patterns.Value.IsSupported && e.Patterns.Value.Pattern.Value.Value == target) ||
+            SafeProbe(() => e.Name == target));
+
+        if (match is not null)
+        {
+            var winIdx = _session.RegisterWindow((nint)handle);
+            return ($"w{winIdx}e_wait", match.ControlType.ToString(), match.Name);
+        }
+
+        return null;
+    }
+
+    private static bool SafeProbe(Func<bool> probe)
+    {
+        try
+        {
+            return probe();
+        }
+        catch (FlaUI.Core.Exceptions.PropertyNotSupportedException)
+        {
+            return false;
+        }
+        catch (FlaUI.Core.Exceptions.PatternNotSupportedException)
+        {
+            return false;
+        }
     }
 
     private object BuildActionResponse(string method, string? refValue, bool includeSnapshot, bool includeMethod = true)

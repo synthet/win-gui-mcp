@@ -9,7 +9,8 @@ Background material from the initial design phase. **Do not implement from these
 | File | Description |
 |------|-------------|
 | [design-research.md](design-research.md) | Comprehensive research doc (alias: `windows-gui`) |
-| [deep-research-report.md](deep-research-report.md) | Open-source Windows GUI / MCP landscape survey (markdown extract) |
+| [deep-research-report.md](deep-research-report.md) | Open-source Windows GUI / MCP landscape survey (early 2025/2026 markdown extract) |
+| [deep-research-report-2026.md](deep-research-report-2026.md) | Updated October 2026 landscape report (APIs, reliability, security, winapp ui, OculiX, UIA caching) |
 | [raw-design-report.txt](raw-design-report.txt) | Original long-form report (alias: WinDOM-MCP) |
 | [windows_gui_mcp_design_html.html](windows_gui_mcp_design_html.html) | Interactive research dashboard; tool names superseded by [../tools.md](../tools.md) |
 

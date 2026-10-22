@@ -1,0 +1,28 @@
+---
+paths: ["**/src/**", "**/.cursor/**"]
+---
+
+# Implementation
+
+## Style
+
+- **Match** naming, formatting, imports, and abstractions already used in the touched files.
+- **Reuse** existing helpers and patterns instead of introducing parallel utilities.
+- Follow module names and layering in [docs/architecture.md](../../docs/architecture.md).
+
+## C# / .NET conventions
+
+- .NET 9; `Microsoft.Extensions.Hosting` for DI and lifecycle.
+- FlaUI **UIA3** primary; UIA2 fallback for legacy WinForms only.
+- UIA control patterns before SendInput coordinate fallback.
+- Structured tool errors using codes from [docs/errors.md](../../docs/errors.md).
+
+## Changes
+
+- Every line in the diff should **serve the request**; avoid cosmetic reformatting of unrelated code.
+- Preserve existing comments unless they are wrong or the behavior changed.
+
+## Quality bar
+
+- Add or update tests when behavior changes in non-trivial ways (follow AGENTS.md).
+- Handle errors in a way consistent with surrounding code (no silent swallowing unless intentional).

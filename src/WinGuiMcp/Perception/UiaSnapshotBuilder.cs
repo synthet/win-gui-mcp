@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
 using FlaUI.UIA3;
@@ -10,7 +11,7 @@ namespace WinGuiMcp.Perception;
 
 public sealed class UiaSnapshotBuilder : IDisposable
 {
-    private const int MaxDepth = 32;
+    private const int DefaultMaxDepth = 32;
 
     private static readonly HashSet<ControlType> InteractiveTypes =
     [
@@ -32,31 +33,75 @@ public sealed class UiaSnapshotBuilder : IDisposable
 
     private readonly UIA3Automation _automation = new();
 
+    public UIA3Automation Automation => _automation;
+
+    public CacheRequest CreateCacheRequest()
+    {
+        var cr = new CacheRequest
+        {
+            AutomationElementMode = AutomationElementMode.Full,
+            TreeScope = TreeScope.Element | TreeScope.Children
+        };
+
+        cr.Add(_automation.PropertyLibrary.Element.BoundingRectangle);
+        cr.Add(_automation.PropertyLibrary.Element.Name);
+        cr.Add(_automation.PropertyLibrary.Element.AutomationId);
+        cr.Add(_automation.PropertyLibrary.Element.ControlType);
+        cr.Add(_automation.PropertyLibrary.Element.ClassName);
+        cr.Add(_automation.PropertyLibrary.Element.IsEnabled);
+        cr.Add(_automation.PropertyLibrary.Element.HasKeyboardFocus);
+        cr.Add(_automation.PropertyLibrary.Element.IsOffscreen);
+
+        cr.Add(_automation.PatternLibrary.InvokePattern);
+        cr.Add(_automation.PatternLibrary.ValuePattern);
+        cr.Add(_automation.PatternLibrary.TogglePattern);
+        cr.Add(_automation.PatternLibrary.SelectionPattern);
+        cr.Add(_automation.PatternLibrary.SelectionItemPattern);
+        cr.Add(_automation.PatternLibrary.ExpandCollapsePattern);
+        cr.Add(_automation.PatternLibrary.ScrollPattern);
+        cr.Add(_automation.PatternLibrary.RangeValuePattern);
+        cr.Add(_automation.PatternLibrary.TextPattern);
+
+        return cr;
+    }
+
     public SnapshotEnvelope Build(
         SnapshotSession session,
         nint handle,
         string scope,
         string detail,
-        bool includeOffscreen)
+        bool includeOffscreen,
+        string? rootRef = null,
+        int maxDepth = DefaultMaxDepth)
     {
         if (handle == 0)
             throw new ToolException(ErrorCodes.InvalidArgument, "handle must be a non-zero HWND integer.");
 
         AutomationElement root;
-        try
+        if (!string.IsNullOrEmpty(rootRef))
         {
-            root = _automation.FromHandle(handle);
+            var (wIdx, _) = RefFormat.Parse(rootRef);
+            var snapId = session.GetCurrentSnapshotId(wIdx);
+            var entry = session.RefTable.Resolve(rootRef, snapId);
+            root = entry.Element;
         }
-        catch (Exception ex)
+        else
         {
-            throw new ToolException(ErrorCodes.WindowGone, $"Could not attach to window: {ex.Message}");
-        }
+            try
+            {
+                root = _automation.FromHandle(handle);
+            }
+            catch (Exception ex)
+            {
+                throw new ToolException(ErrorCodes.WindowGone, $"Could not attach to window: {ex.Message}");
+            }
 
-        if (scope == "focused-control")
-        {
-            var focused = _automation.FocusedElement();
-            if (focused is not null)
-                root = focused;
+            if (scope == "focused-control")
+            {
+                var focused = _automation.FocusedElement();
+                if (focused is not null)
+                    root = focused;
+            }
         }
 
         var windowIndex = session.RegisterWindow(handle);
@@ -64,7 +109,7 @@ public sealed class UiaSnapshotBuilder : IDisposable
         session.SetSnapshotId(windowIndex, snapshotId);
 
         var elementIndex = 0;
-        var tree = WalkElement(root, windowIndex, ref elementIndex, snapshotId, handle, detail, includeOffscreen, 0, session);
+        var tree = WalkElement(root, windowIndex, ref elementIndex, snapshotId, handle, detail, includeOffscreen, 0, maxDepth, session);
 
         NativeMethods.GetWindowThreadProcessId(handle, out var pid);
 
@@ -88,6 +133,7 @@ public sealed class UiaSnapshotBuilder : IDisposable
         string detail,
         bool includeOffscreen,
         int depth,
+        int maxDepth,
         SnapshotSession session)
     {
         elementIndex++;
@@ -115,7 +161,7 @@ public sealed class UiaSnapshotBuilder : IDisposable
             states.Add("focused");
 
         var children = new List<UemNode>();
-        if (depth < MaxDepth)
+        if (depth < maxDepth)
         {
             foreach (var child in element.FindAllChildren())
             {
@@ -136,12 +182,12 @@ public sealed class UiaSnapshotBuilder : IDisposable
 
                         if (visibleChildren.Count == 1)
                         {
-                            children.Add(WalkElement(visibleChildren[0], windowIndex, ref elementIndex, snapshotId, hwnd, detail, includeOffscreen, depth + 1, session));
+                            children.Add(WalkElement(visibleChildren[0], windowIndex, ref elementIndex, snapshotId, hwnd, detail, includeOffscreen, depth + 1, maxDepth, session));
                             continue;
                         }
                     }
 
-                    children.Add(WalkElement(child, windowIndex, ref elementIndex, snapshotId, hwnd, detail, includeOffscreen, depth + 1, session));
+                    children.Add(WalkElement(child, windowIndex, ref elementIndex, snapshotId, hwnd, detail, includeOffscreen, depth + 1, maxDepth, session));
                 }
                 catch
                 {
@@ -245,8 +291,10 @@ public sealed class UiaSnapshotBuilder : IDisposable
         element.Patterns.Value.IsSupported ||
         element.Patterns.Toggle.IsSupported ||
         element.Patterns.Selection.IsSupported ||
+        element.Patterns.SelectionItem.IsSupported ||
         element.Patterns.ExpandCollapse.IsSupported ||
-        element.Patterns.Scroll.IsSupported;
+        element.Patterns.Scroll.IsSupported ||
+        element.Patterns.RangeValue.IsSupported;
 
     private static List<string> GetSupportedPatterns(AutomationElement element)
     {
@@ -255,8 +303,11 @@ public sealed class UiaSnapshotBuilder : IDisposable
         if (element.Patterns.Value.IsSupported) patterns.Add("Value");
         if (element.Patterns.Toggle.IsSupported) patterns.Add("Toggle");
         if (element.Patterns.Selection.IsSupported) patterns.Add("Selection");
+        if (element.Patterns.SelectionItem.IsSupported) patterns.Add("SelectionItem");
         if (element.Patterns.ExpandCollapse.IsSupported) patterns.Add("ExpandCollapse");
         if (element.Patterns.Scroll.IsSupported) patterns.Add("Scroll");
+        if (element.Patterns.RangeValue.IsSupported) patterns.Add("RangeValue");
+        if (element.Patterns.Text.IsSupported) patterns.Add("Text");
         return patterns;
     }
 

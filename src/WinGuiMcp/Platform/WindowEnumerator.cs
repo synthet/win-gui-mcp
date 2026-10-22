@@ -65,6 +65,7 @@ public sealed class WindowEnumerator
     public void FocusWindow(nint handle)
     {
         ValidateHandle(handle);
+        InputBoundary.ThrowIfBlocked(handle);
 
         if (NativeMethods.IsIconic(handle))
             NativeMethods.ShowWindow(handle, NativeMethods.SW_RESTORE);
@@ -332,6 +333,8 @@ public sealed class WindowEnumerator
 
     private static void SendAltTap()
     {
+        InputBoundary.ThrowIfInteractiveDesktop();
+
         var down = new NativeMethods.INPUT
         {
             Type = NativeMethods.INPUT_KEYBOARD,

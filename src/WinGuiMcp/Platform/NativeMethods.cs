@@ -95,6 +95,66 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
+    [LibraryImport("user32.dll")]
+    public static partial IntPtr WindowFromPoint(POINT point);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    public static partial IntPtr OpenInputDesktop(uint dwFlags, [MarshalAs(UnmanagedType.Bool)] bool fInherit, uint dwDesiredAccess);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool CloseDesktop(IntPtr hDesktop);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetUserObjectInformationW(
+        IntPtr hObj,
+        int nIndex,
+        IntPtr pvInfo,
+        uint nLength,
+        out uint lpnLengthNeeded);
+
+    [LibraryImport("wtsapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool WTSQuerySessionInformationW(
+        IntPtr hServer,
+        int sessionId,
+        int wtsInfoClass,
+        out IntPtr ppBuffer,
+        out uint pBytesReturned);
+
+    [LibraryImport("wtsapi32.dll")]
+    public static partial void WTSFreeMemory(IntPtr pMemory);
+
+    [LibraryImport("kernel32.dll")]
+    public static partial IntPtr GetCurrentProcess();
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial IntPtr OpenProcess(uint dwDesiredAccess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, uint dwProcessId);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool CloseHandle(IntPtr hObject);
+
+    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool OpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr tokenHandle);
+
+    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetTokenInformation(
+        IntPtr tokenHandle,
+        int tokenInformationClass,
+        IntPtr tokenInformation,
+        uint tokenInformationLength,
+        out uint returnLength);
+
+    [LibraryImport("advapi32.dll")]
+    public static partial IntPtr GetSidSubAuthority(IntPtr pSid, uint nSubAuthority);
+
+    [LibraryImport("advapi32.dll")]
+    public static partial IntPtr GetSidSubAuthorityCount(IntPtr pSid);
+
     [LibraryImport("user32.dll", SetLastError = true)]
     public static partial uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
@@ -108,6 +168,13 @@ internal static partial class NativeMethods
 
         public int Width => Right - Left;
         public int Height => Bottom - Top;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT
+    {
+        public int X;
+        public int Y;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -163,4 +230,13 @@ internal static partial class NativeMethods
     public const int SW_RESTORE = 9;
     public const int SW_SHOW = 5;
     public const byte VK_MENU = 0x12;
+
+    public const uint DESKTOP_READOBJECTS = 0x0001;
+    public const int UOI_NAME = 2;
+    public const int WTS_CURRENT_SESSION = -1;
+    public const int WTSSessionInfoEx = 25;
+    public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+    public const uint TOKEN_QUERY = 0x0008;
+    public const int TokenIntegrityLevel = 25;
+    public const int ErrorAccessDenied = 5;
 }

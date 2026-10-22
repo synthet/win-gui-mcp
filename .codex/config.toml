@@ -1,0 +1,6 @@
+
+
+[mcp_servers."win-gui-mcp"]
+command = "dotnet"
+args = ["run", "--project", "src/WinGuiMcp/WinGuiMcp.csproj", "--no-build"]
+cwd = "D:\\Projects\\win-gui-mcp"

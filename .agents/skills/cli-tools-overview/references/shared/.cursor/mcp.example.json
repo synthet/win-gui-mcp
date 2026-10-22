@@ -1,0 +1,45 @@
+{
+  "_comment": "Template for .cursor/mcp.json (gitignored). Copy this file to .cursor/mcp.json and fill in servers. Secrets via env only. User-level ~/.cursor/mcp.json should hold cross-repo tools; project keys live here. Naming convention: <scope>-<ro|rw>-<purpose> (ro/read = read-only, rw/write = write-capable). Examples below are opt-in — copy from _examples into mcpServers to enable.",
+  "mcpServers": {},
+  "_examples": {
+    "proj-rw-cli-review": {
+      "_comment": "Example local stdio write-capable orchestration server. Requires approval before running side-effecting tools.",
+      "side_effects": "write-capable",
+      "approval_required": true,
+      "approval_note": "Required before executing shell commands, modifying files, or dispatching write-capable tools.",
+      "command": "node",
+      "args": ["../subagent-orchestrator/agent-orchestrator/dist/index.js"],
+      "env": { "WORKSPACE_ROOT": "${workspaceFolder}" }
+    },
+    "proj-ro-fff": {
+      "_comment": "Optional local stdio read-only fast file search — https://github.com/dmtrKovalenko/fff . Install fff-mcp binary; on Windows often %LOCALAPPDATA%\\fff-mcp\\bin\\fff-mcp.exe",
+      "side_effects": "read-only",
+      "command": "fff-mcp",
+      "args": [],
+      "env": { "WORKSPACE_ROOT": "${workspaceFolder}" }
+    },
+    "proj-ro-graphify": {
+      "_comment": "Optional local stdio read-only knowledge graph — https://github.com/Graphify-Labs/graphify . Requires: uv tool install \"graphifyy[mcp]\"; build graphify-out/graph.json first (graphify .). Tools: query_graph, get_node, get_neighbors, shortest_path, …",
+      "side_effects": "read-only",
+      "command": "graphify-mcp",
+      "args": ["graphify-out/graph.json"],
+      "env": { "WORKSPACE_ROOT": "${workspaceFolder}" }
+    },
+    "proj-ro-docs": {
+      "_comment": "Example remote HTTP read-only MCP server. Remote examples are disabled by default; set enabled=true only after review.",
+      "side_effects": "read-only",
+      "enabled": false,
+      "url": "https://mcp.example.com/docs",
+      "headers": { "Authorization": "Bearer ${MCP_DOCS_TOKEN}" }
+    },
+    "proj-rw-issues": {
+      "_comment": "Example remote HTTP write-capable MCP server using token/OAuth-style authorization from env only.",
+      "side_effects": "write-capable",
+      "approval_required": true,
+      "approval_note": "Required before creating, updating, deleting, or dispatching issue tracker actions.",
+      "enabled": false,
+      "url": "https://mcp.example.com/issues",
+      "headers": { "Authorization": "Bearer ${MCP_ISSUES_TOKEN}" }
+    }
+  }
+}

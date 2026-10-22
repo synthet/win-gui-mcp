@@ -63,15 +63,23 @@ public class Phase1ExplorerGateTests
 
             GateTestHelpers.AssertResponseOk(tools.Service.Click(fileRef, null, null, "left", 1, includeSnapshot: false));
             Thread.Sleep(200);
+            GateTestHelpers.TrySaveDebugScreenshot(tools.Service, handle, "explorer-file-selected");
 
             if (!GateTestHelpers.TryRenameSelectedExplorerItem(tools.Service, handle, renamedName))
-                return;
+            {
+                var shot = GateTestHelpers.TrySaveDebugScreenshot(tools.Service, handle, "explorer-rename-failed");
+                Assert.Fail(
+                    $"Explorer rename did not complete.{(shot is null ? "" : $" Screenshot: {shot}")}");
+            }
 
             Thread.Sleep(500);
-            Assert.True(
-                File.Exists(Path.Combine(folder, renamedName)) ||
-                GateTestHelpers.TreeContainsText(tools.Service, handle, renamedName),
-                "Renamed file should appear on disk or in the Explorer tree.");
+            GateTestHelpers.TrySaveDebugScreenshot(tools.Service, handle, "explorer-after-rename");
+            if (!File.Exists(Path.Combine(folder, renamedName)))
+            {
+                var shot = GateTestHelpers.TrySaveDebugScreenshot(tools.Service, handle, "explorer-file-missing");
+                Assert.Fail(
+                    $"Renamed file should exist on disk. Debug screenshots in {GateTestHelpers.GateDebugDirectory}.{(shot is null ? "" : $" Last: {shot}")}");
+            }
         }
         finally
         {

@@ -30,6 +30,7 @@ Read [errors.md](errors.md) and [security.md](security.md) alongside `tools.md` 
 | [phases.md](phases.md) | Phased delivery plan with benchmark gates |
 | [security.md](security.md) | UIPI, elevation, deployment warnings |
 | [requirements/README.md](requirements/README.md) | Technical requirements index (traceability; does not override schemas) |
+| [dxo-photolab/README.md](dxo-photolab/README.md) | DxO PhotoLab 10 UI automation, UIA patterns, sidecar integration, and research |
 
 ## Research (background only)
 

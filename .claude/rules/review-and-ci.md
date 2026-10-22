@@ -1,0 +1,22 @@
+---
+paths: ["**/.github/**", "**/docs/**"]
+---
+
+# Review and CI
+
+## Pull requests
+
+- PR descriptions should state **what** changed and **why**, not only the diff.
+- Call out **breaking changes**, migrations, and config/env updates explicitly.
+- MCP tool or schema changes must reference updated [docs/tools.md](../../docs/tools.md).
+
+## CI
+
+- `dotnet build WinGuiMcp.sln` must pass before merge.
+- When test projects exist, `dotnet test` must pass.
+- If CI fails, use logs to **fix root cause**; avoid disabling checks without explicit user approval.
+
+## Security
+
+- Do not bypass review or security steps for convenience; flag elevation or UI automation risks clearly.
+- See [docs/security.md](../../docs/security.md) and [.agent/SAFETY.md](../../.agent/SAFETY.md).

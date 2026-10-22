@@ -119,7 +119,10 @@ Run manually or via `/phase-gate`. Each flow must complete **without coordinate-
 ### Enhancements
 
 - Full control-pattern coverage in `PatternExecutor`
-- UIA event subscriptions + `SetWinEventHook` for `wait_for` ([architecture.md](architecture.md))
+- UIA event subscriptions + `SetWinEventHook` for `wait_for` ([architecture.md](architecture.md)); polling remains the fallback
+- Keep snapshot cache requests aligned with every pattern the walker probes; pruning already limits depth
+- Idempotent `toggle` (ensure a state) when that tool lands; `click` stays a single activation
+- Failure diagnostic bundle alongside trajectory logging: integrity, foreground HWND, local subtree, screenshot, DPI, and modal list
 - **MSAA / IAccessible2 bridge** for legacy controls and Firefox-style gaps (per Windows-MCP precedent)
 - Typed errors everywhere ([errors.md](errors.md))
 - Post-action `_warning` when UI unchanged

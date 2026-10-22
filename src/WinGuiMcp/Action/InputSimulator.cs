@@ -7,6 +7,11 @@ public sealed class InputSimulator
 {
     public void ClickAt(int x, int y, string button, int clickCount)
     {
+        var target = NativeMethods.WindowFromPoint(new NativeMethods.POINT { X = x, Y = y });
+        if (target == 0)
+            target = NativeMethods.GetForegroundWindow();
+
+        InputBoundary.ThrowIfBlocked(target);
         MoveMouse(x, y);
 
         var (down, up) = button switch
@@ -25,6 +30,8 @@ public sealed class InputSimulator
 
     public void TypeUnicode(string text)
     {
+        InputBoundary.ThrowIfBlocked(NativeMethods.GetForegroundWindow());
+
         foreach (var ch in text)
         {
             var down = new NativeMethods.INPUT
@@ -47,6 +54,8 @@ public sealed class InputSimulator
 
     public void SendHotkey(string keys)
     {
+        InputBoundary.ThrowIfBlocked(NativeMethods.GetForegroundWindow());
+
         var parts = keys.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (parts.Length == 0)
             throw new ToolException(ErrorCodes.InvalidArgument, "keys must specify at least one key.");
@@ -87,6 +96,8 @@ public sealed class InputSimulator
     }
 
     public void SendEnter() => SendHotkey("enter");
+
+    public void SelectAll() => SendHotkey("ctrl+a");
 
     private static void MoveMouse(int x, int y)
     {
@@ -132,6 +143,9 @@ public sealed class InputSimulator
 
     private static void SendInputs(NativeMethods.INPUT[] inputs)
     {
+        // Re-check the desktop at the injection site. SendInput's return value does not identify UIPI.
+        InputBoundary.ThrowIfInteractiveDesktop();
+
         var sent = NativeMethods.SendInput((uint)inputs.Length, inputs, System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.INPUT>());
         if (sent == 0)
             throw new ToolException(ErrorCodes.InternalError, "SendInput failed.");

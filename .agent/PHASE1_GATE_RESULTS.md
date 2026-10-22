@@ -32,20 +32,36 @@ Recorded: 2026-06-07 (automated gate suite + manual MCP gate)
 
 Optional gate steps exit early when UI layout/locale differs (Calculator standard mode, Explorer file list UIA).
 
-## Manual MCP gate (2026-06-07)
+## Manual MCP gate (2026-06-07, run 2)
 
-Run via live `win-gui-mcp` MCP tools (refs + UIA patterns only; no coordinate clicks).
+Run via live `win-gui-mcp` MCP tools (refs + UIA patterns only; no coordinate clicks). Settings skipped per [SAFETY.md](SAFETY.md).
 
 | App | Pass | Notes / error codes |
 |-----|------|---------------------|
-| Calculator | **yes** | Launch → snapshot → click 2+3= (InvokePattern) → result `Отображать как 5`. Tree well under 8k-token budget. |
-| Notepad | **partial** | Save As dialog + `set_value` + Save; filename garbled (typing leaked into dialog field). |
-| File Explorer | **partial** | Folder snapshot + file click; F2 rename did not update file on disk. |
-| Settings | **skipped** | Agent policy: do not automate Settings / Control Panel ([SAFETY.md](SAFETY.md)). |
-| WinForms sample | **yes** | `set_value` + click → `Output: Phase gate text`. |
-| WPF sample | **yes** | Menu → dialog → `Dialog result: Gate OK`. |
+| Calculator | **yes** | 2+3= → `wait_for` text-visible `5` (168 ms). All clicks `InvokePattern`. Initial `FocusFailed`; window still focused in snapshot. |
+| Notepad | **partial** | `ValuePattern` type into Document ref → Ctrl+S → Save As dialog → `set_value` filename + Invoke Save. Saved as garbled Desktop filename, not target temp path. |
+| File Explorer | **partial** | Temp folder opened; `gate-rename-me` in list; file click `InvokePattern`. F2 / Rename toolbar / `set_value` → `PatternNotSupported` or `InternalError` (0x80040201); file unchanged on disk. |
+| WinForms sample | **yes** | `set_value` InputTextBox → click → `wait_for` `Output: Phase gate MCP`. |
+| WPF sample | **yes** | Alt+F/O → dialog `set_value` + OK → snapshot `Dialog result: Gate OK`. |
 
-**Manual gate result (agent scope):** **partial pass** (3/5 full, 2/5 partial; Settings N/A).
+**Gate result:** **partial pass** (3/5 full, 2/5 partial).
+
+**Remediation (addressed 2026-06-07):**
+
+1. `TypeText` prefers `ValuePattern` when supported; `SetValue` focuses first; `Click` tolerates missing `IsOffscreen`.
+2. Win11 Notepad: use **`Ctrl+Shift+S`** (real `#32770` Save As), not `Ctrl+S` (inline rename). Avoid `"Save"` title match — it hits Notepad tabs.
+3. Save dialog: target `FileNameControlHost` / `Имя файла:`; click **Сохранить** by name (not `automationId` `1` — collides with list items).
+4. Explorer rename: try ribbon **Rename** / **Переименовать** before F2; `Ctrl+A` SendInput fallback.
+5. **Screenshot debug:** gate tests write PNGs to `%TEMP%\\WinGuiMcpGateDebug` via `GateTestHelpers.TrySaveDebugScreenshot` on failure steps (Notepad save, Explorer rename).
+
+Re-run `/phase-gate` after MCP reload to confirm manual MCP pass.
+
+**Remediation (open):**
+
+1. Notepad: launch fresh instance (or close prior tabs); navigate Save As to temp folder via address bar ref before `set_value`.
+2. Explorer rename: Phase 2 `select` + inline-edit detection; F2 rename mode may need event-driven `wait_for` before typing.
+
+## Manual MCP gate (2026-06-07, run 1 — superseded)
 
 ## Sample app paths
 

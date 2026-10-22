@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using ModelContextProtocol.Server;
 using WinGuiMcp.Common;
+using WinGuiMcp.Platform;
 
 namespace WinGuiMcp.Tools;
 
@@ -40,12 +41,14 @@ public sealed class Phase1Tools
         string scope = "window",
         string detail = "control",
         bool includeOffscreen = false,
-        bool useVision = false) =>
+        bool useVision = false,
+        string? rootRef = null,
+        int maxDepth = 32) =>
         Execute(() =>
         {
             if (useVision)
                 throw new ToolException(ErrorCodes.InvalidArgument, "useVision is not supported in Phase 1.");
-            return _tools.Snapshot(handle, scope, detail, includeOffscreen);
+            return _tools.Snapshot(handle, scope, detail, includeOffscreen, rootRef, maxDepth);
         });
 
     [McpServerTool(Name = "find_element")]
@@ -85,7 +88,7 @@ public sealed class Phase1Tools
         Execute(() => _tools.TypeText(text, @ref, clearFirst, submit, includeSnapshot));
 
     [McpServerTool(Name = "set_value")]
-    [Description("Sets control value directly via UIA ValuePattern.")]
+    [Description("Sets control value directly via UIA ValuePattern or RangeValuePattern.")]
     public Task<string> SetValue(
         string @ref,
         string value,
@@ -138,6 +141,36 @@ public sealed class Phase1Tools
         int timeoutMs = 5000) =>
         Execute(() => _tools.WaitFor(handle, condition, target, timeoutMs));
 
+    [McpServerTool(Name = "toggle")]
+    [Description("Toggles a check box or toggle button via TogglePattern.")]
+    public Task<string> Toggle(string @ref, bool includeSnapshot = false) =>
+        Execute(() => _tools.Toggle(@ref, includeSnapshot));
+
+    [McpServerTool(Name = "select")]
+    [Description("Selects a list item, tab item, or radio button via SelectionItemPattern.")]
+    public Task<string> Select(string @ref, bool includeSnapshot = false) =>
+        Execute(() => _tools.Select(@ref, includeSnapshot));
+
+    [McpServerTool(Name = "expand")]
+    [Description("Expands a combo box, tree item, or expander via ExpandCollapsePattern.")]
+    public Task<string> Expand(string @ref, bool includeSnapshot = false) =>
+        Execute(() => _tools.Expand(@ref, includeSnapshot));
+
+    [McpServerTool(Name = "collapse")]
+    [Description("Collapses a combo box, tree item, or expander via ExpandCollapsePattern.")]
+    public Task<string> Collapse(string @ref, bool includeSnapshot = false) =>
+        Execute(() => _tools.Collapse(@ref, includeSnapshot));
+
+    [McpServerTool(Name = "get_text")]
+    [Description("Reads text from an element via TextPattern, ValuePattern, or Name.")]
+    public Task<string> GetText(string @ref) =>
+        Execute(() => _tools.GetText(@ref));
+
+    [McpServerTool(Name = "inspect_at")]
+    [Description("Inspects the UIA element at the given screen coordinates.")]
+    public Task<string> InspectAt(int x, int y) =>
+        Execute(() => _tools.InspectAt(x, y));
+
     private static Task<string> Execute(Func<object> action)
     {
         try
@@ -147,7 +180,21 @@ public sealed class Phase1Tools
         }
         catch (ToolException ex)
         {
-            return Task.FromResult(ToolResponse.Error(ex.Error));
+            var fgHwnd = NativeMethods.GetForegroundWindow();
+            var details = ex.Error.Details ?? new Dictionary<string, object?>();
+            if (!details.ContainsKey("foregroundHwnd"))
+                details["foregroundHwnd"] = (int)fgHwnd;
+            if (!details.ContainsKey("foregroundTitle"))
+                details["foregroundTitle"] = WindowEnumerator.GetWindowTitle(fgHwnd);
+
+            var enriched = new ToolError
+            {
+                Ok = false,
+                Code = ex.Error.Code,
+                Message = ex.Error.Message,
+                Details = details
+            };
+            return Task.FromResult(ToolResponse.Error(enriched));
         }
         catch (Exception ex)
         {

@@ -202,6 +202,16 @@ Returns a pruned UIA accessibility tree with stable refs.
       "type": "boolean",
       "default": false,
       "description": "Phase 3: enable CV fallback"
+    },
+    "rootRef": {
+      "type": "string",
+      "description": "Optional root ref to scope snapshot to a specific subtree (e.g. dialog or container)"
+    },
+    "maxDepth": {
+      "type": "integer",
+      "default": 32,
+      "minimum": 1,
+      "description": "Maximum tree depth to traverse"
     }
   },
   "additionalProperties": false
@@ -551,7 +561,11 @@ Waits until a condition holds or timeout.
         "element-exists",
         "element-enabled",
         "text-visible",
-        "window-active"
+        "window-active",
+        "window-closed",
+        "element-gone",
+        "element-hidden",
+        "value-equals"
       ]
     },
     "target": {
@@ -602,17 +616,25 @@ Vision selectors (research: `ocr:"Save As"`, `icon:"trash"`) are Phase 3 additio
 
 Alias for `focus_window` + initial `snapshot`. Input: `handleOrTitleRegex`. Returns `{ handle, snapshotId, tree }`.
 
-### `toggle`
+### `toggle` (Implemented)
 
-Input: `{ ref }`. Uses `TogglePattern`. Phase 2.
+Input: `{ ref, includeSnapshot? }`. Uses `TogglePattern.Toggle()`. Returns `{ ok: true, method: "TogglePattern" }`.
 
-### `expand` / `collapse`
+### `expand` / `collapse` (Implemented)
 
-Input: `{ ref }`. Uses `ExpandCollapsePattern`. Phase 2.
+Input: `{ ref, includeSnapshot? }`. Uses `ExpandCollapsePattern.Expand()` or `Collapse()`. Returns `{ ok: true, method: "ExpandCollapsePattern" }`.
 
-### `select`
+### `select` (Implemented)
 
-Input: `{ ref }`. Uses `SelectionItemPattern.Select()`. Phase 2.
+Input: `{ ref, includeSnapshot? }`. Uses `SelectionItemPattern.Select()`. Returns `{ ok: true, method: "SelectionItemPattern" }`.
+
+### `get_text` (Implemented)
+
+Input: `{ ref }`. Uses `TextPattern`, `ValuePattern`, or element `Name`. Returns `{ ok: true, ref, text }`.
+
+### `inspect_at` (Implemented)
+
+Input: `{ x, y }`. Uses `AutomationElement.FromPoint` for interactive element debugging. Returns `{ ok: true, role, name, automationId, className, isEnabled, isOffscreen }`.
 
 ### `scroll`
 
@@ -621,14 +643,6 @@ Input: `{ ref?, point?, direction: "up"|"down"|"left"|"right", amount: number }`
 ### `drag`
 
 Input: `{ fromRef|fromPoint, toRef|toPoint }`. SendInput drag sequence. Phase 2.
-
-### `get_text`
-
-Input: `{ ref }`. Uses `TextPattern` or `ValuePattern`; OCR fallback Phase 3. Phase 2.
-
-### `inspect_at`
-
-Input: `{ x, y }`. `AutomationElement.FromPoint` for debugging. Phase 2.
 
 ---
 

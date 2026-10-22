@@ -50,6 +50,42 @@ internal static class GateTestHelpers
         }
     }
 
+    public static string GateDebugDirectory =>
+        Path.Combine(Path.GetTempPath(), "WinGuiMcpGateDebug");
+
+    /// <summary>
+    /// Saves a window screenshot for gate debugging. Returns the PNG path or null on failure.
+    /// </summary>
+    public static string? TrySaveDebugScreenshot(ToolService tools, int? handle, string stepLabel)
+    {
+        try
+        {
+            var safeLabel = string.Concat(stepLabel.Select(ch =>
+                char.IsLetterOrDigit(ch) || ch is '-' or '_' ? ch : '-'));
+            Directory.CreateDirectory(GateDebugDirectory);
+            var path = Path.Combine(
+                GateDebugDirectory,
+                $"{DateTime.UtcNow:yyyyMMdd-HHmmss-fff}-{safeLabel}.png");
+
+            var screenshot = tools.Screenshot(handle, null, scale: 1.0);
+            var json = ToolResponse.Serialize(screenshot);
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.GetProperty("ok").GetBoolean())
+                return null;
+
+            var base64 = doc.RootElement.GetProperty("imageBase64").GetString();
+            if (string.IsNullOrWhiteSpace(base64))
+                return null;
+
+            File.WriteAllBytes(path, Convert.FromBase64String(base64));
+            return path;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public static bool TryClickButton(ToolService tools, int handle, params string[] names)
     {
         foreach (var name in names)
@@ -78,6 +114,10 @@ internal static class GateTestHelpers
                    clickJson.Contains("TogglePattern", StringComparison.OrdinalIgnoreCase);
         }
         catch (ToolException)
+        {
+            return false;
+        }
+        catch (Exception)
         {
             return false;
         }
@@ -125,26 +165,154 @@ internal static class GateTestHelpers
         }
     }
 
+    public static bool TryClickSaveInDialog(ToolService tools, int dialogHandle)
+    {
+        TryFocus(tools, dialogHandle);
+        Thread.Sleep(200);
+
+        if (TryClickButton(tools, dialogHandle, "Сохранить", "Save"))
+        {
+            Thread.Sleep(1000);
+            return true;
+        }
+
+        try
+        {
+            AssertResponseOk(tools.Hotkey("enter", dialogHandle, includeSnapshot: false));
+        }
+        catch (ToolException)
+        {
+            // Enter may not submit on all dialog variants.
+        }
+
+        Thread.Sleep(1000);
+        return TryFindSaveDialogHandle(tools) == 0;
+    }
+
     public static bool TrySetFilenameInSaveDialog(ToolService tools, int dialogHandle, string filePath)
     {
         TryFocus(tools, dialogHandle);
         Thread.Sleep(400);
+
+        var folder = Path.GetDirectoryName(filePath);
+        var fileName = Path.GetFileName(filePath);
+
+        if (!string.IsNullOrEmpty(folder))
+        {
+            TryNavigateSaveDialogToFolder(tools, dialogHandle, folder);
+            Thread.Sleep(600);
+            TrySaveDebugScreenshot(tools, dialogHandle, "save-after-folder-nav");
+        }
+
+        if (TrySetFilenameField(tools, dialogHandle, fileName, filePath))
+            return true;
+
+        return TrySetFilenameField(tools, dialogHandle, filePath);
+    }
+
+    private static bool TrySetFilenameField(
+        ToolService tools,
+        int dialogHandle,
+        string value,
+        string? fullPathFallback = null)
+    {
         tools.Snapshot(dialogHandle, "window", "control", includeOffscreen: true);
 
-        foreach (var (by, value, match) in new (string, string, string)[]
+        foreach (var (by, locatorValue, match) in new (string, string, string)[]
                  {
-                     ("name", "File name:", "contains"),
-                     ("name", "Имя файла", "contains"),
+                     ("automationId", "FileNameControlHost", "exact"),
                      ("automationId", "1001", "exact"),
-                     ("role", "Edit", "exact"),
-                     ("role", "ComboBox", "exact"),
+                     ("automationId", "1148", "exact"),
+                     ("name", "File name:", "contains"),
+                     ("name", "Имя файла:", "contains"),
                  })
         {
-            if (TrySetValueByLocator(tools, dialogHandle, by, value, filePath, match))
-                return true;
+            for (var nth = 0; nth < 4; nth++)
+            {
+                string @ref;
+                try
+                {
+                    @ref = ReadRef(tools.FindElement(dialogHandle, by, locatorValue, nth: nth, match: match));
+                }
+                catch (ToolException)
+                {
+                    break;
+                }
+
+                foreach (var candidate in new[] { value, fullPathFallback }.Where(v => !string.IsNullOrEmpty(v)))
+                {
+                    try
+                    {
+                        TryFocus(tools, dialogHandle);
+                        AssertResponseOk(tools.SetValue(@ref, candidate!, includeSnapshot: false));
+                        Thread.Sleep(200);
+                        try
+                        {
+                            AssertResponseOk(tools.Hotkey("enter", dialogHandle, includeSnapshot: false));
+                        }
+                        catch (ToolException)
+                        {
+                            // Save may require an explicit button click on some builds.
+                        }
+
+                        return true;
+                    }
+                    catch (ToolException)
+                    {
+                        // Try next value, nth, or locator.
+                    }
+                }
+            }
         }
 
         return false;
+    }
+
+    public static void TryDismissSaveDialog(ToolService tools, int dialogHandle)
+    {
+        TryFocus(tools, dialogHandle);
+        try
+        {
+            AssertResponseOk(tools.Hotkey("escape", dialogHandle, includeSnapshot: false));
+        }
+        catch (ToolException)
+        {
+            // Best-effort dismiss.
+        }
+    }
+
+    private static void TryNavigateSaveDialogToFolder(ToolService tools, int dialogHandle, string folderPath)
+    {
+        TryFocus(tools, dialogHandle);
+        try
+        {
+            foreach (var keys in new[] { "ctrl+l", "alt+d" })
+            {
+                AssertResponseOk(tools.Hotkey(keys, dialogHandle, includeSnapshot: false));
+                Thread.Sleep(350);
+                AssertResponseOk(tools.TypeText(folderPath, null, clearFirst: true, submit: true, includeSnapshot: false));
+                Thread.Sleep(900);
+                if (GateTreeContains(tools, dialogHandle, Path.GetFileName(folderPath.TrimEnd('\\'))))
+                    return;
+            }
+        }
+        catch (ToolException)
+        {
+            // Address bar navigation is best-effort; filename field may still accept a full path.
+        }
+    }
+
+    private static bool GateTreeContains(ToolService tools, int handle, string text)
+    {
+        try
+        {
+            var snapshot = tools.Snapshot(handle, "window", "control", includeOffscreen: true);
+            return ToolResponse.Serialize(snapshot.Tree).Contains(text, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public static bool TryTypeInTextEditor(ToolService tools, int handle, string text)
@@ -161,7 +329,7 @@ internal static class GateTestHelpers
 
             try
             {
-                AssertResponseOk(tools.TypeText(text, @ref, clearFirst: false, submit: false, includeSnapshot: false));
+                AssertResponseOk(tools.TypeText(text, @ref, clearFirst: true, submit: false, includeSnapshot: false));
                 return true;
             }
             catch (ToolException)
@@ -176,12 +344,28 @@ internal static class GateTestHelpers
     public static bool TryRenameSelectedExplorerItem(ToolService tools, int handle, string newName)
     {
         TryFocus(tools, handle);
-        AssertResponseOk(tools.Hotkey("f2", handle, includeSnapshot: false));
-        Thread.Sleep(500);
+
+        if (TryClickButton(tools, handle, "Rename", "Переименовать"))
+        {
+            Thread.Sleep(500);
+        }
+        else
+        {
+            AssertResponseOk(tools.Hotkey("f2", handle, includeSnapshot: false));
+            Thread.Sleep(700);
+        }
+
         tools.Snapshot(handle, "window", "control", includeOffscreen: true);
 
-        if (TryFindElementRef(tools, handle, "automationId", "System.ItemNameDisplay", "exact", out var nameEdit))
+        foreach (var (by, value, match) in new (string, string, string)[]
+                 {
+                     ("automationId", "System.ItemNameDisplay", "exact"),
+                     ("role", "Edit", "exact"),
+                 })
         {
+            if (!TryFindElementRef(tools, handle, by, value, match, out var nameEdit))
+                continue;
+
             try
             {
                 AssertResponseOk(tools.SetValue(nameEdit, newName, includeSnapshot: false));
@@ -190,7 +374,15 @@ internal static class GateTestHelpers
             }
             catch (ToolException)
             {
-                // Fall through to SendInput typing.
+                try
+                {
+                    AssertResponseOk(tools.TypeText(newName, nameEdit, clearFirst: true, submit: true, includeSnapshot: false));
+                    return true;
+                }
+                catch (ToolException)
+                {
+                    // Try next locator.
+                }
             }
         }
 
@@ -218,6 +410,23 @@ internal static class GateTestHelpers
         {
             var handle = TryFindWindowHandle(tools, fragment);
             if (handle != 0)
+                return handle;
+        }
+
+        return 0;
+    }
+
+    public static int TryFindSaveDialogHandle(ToolService tools, int excludeHandle = 0)
+    {
+        foreach (var fragment in new[]
+                 {
+                     "Save As",
+                     "Сохранить как",
+                     "Сохранение",
+                 })
+        {
+            var handle = TryFindWindowHandle(tools, fragment);
+            if (handle != 0 && handle != excludeHandle)
                 return handle;
         }
 

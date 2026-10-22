@@ -29,7 +29,8 @@ Authority map for AI agents and implementers. When docs disagree, the files list
 | Topic | Location | Agent rule |
 |-------|----------|------------|
 | Design research | [`research/design-research.md`](research/design-research.md) | **Do not implement from these files** |
-| Landscape survey | [`research/deep-research-report.md`](research/deep-research-report.md) | Tracked markdown extract; **do not implement from this file** |
+| Landscape survey (2025) | [`research/deep-research-report.md`](research/deep-research-report.md) | Tracked markdown extract; **do not implement from this file** |
+| Landscape survey (Oct 2026) | [`research/deep-research-report-2026.md`](research/deep-research-report-2026.md) | Updated landscape report; **do not implement from this file** |
 | Design research | [`research/design-research.md`](research/design-research.md) | Background only |
 | Raw design report | [`research/raw-design-report.txt`](research/raw-design-report.txt) | Background only |
 | Interactive dashboard | [`research/windows_gui_mcp_design_html.html`](research/windows_gui_mcp_design_html.html) | Stale tool names; see [`tools.md`](tools.md) |
