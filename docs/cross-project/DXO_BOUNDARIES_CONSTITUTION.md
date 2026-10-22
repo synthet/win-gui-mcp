@@ -25,7 +25,7 @@ Both projects automate **DxO PhotoLab 10** on Windows, but they solve different 
 | **Implementation plan (UIA)** | Gate tests in `tests/WinGuiMcp.Tests/`; generic guides in [`docs/guides/`](../guides/README.md) | [`docs/photolab-automation/PLAN.md`](file:///D:/Projects/dxo/docs/photolab-automation/PLAN.md) |
 | **Sidecar / file I/O** | OS waits in `wait_for` (`file-stable`, `process-exists`) — [`tools.md`](../tools.md) | **Owner** of `dxo_*` sidecar tools and `scripts/` |
 | **UI recipes (PhotoLab)** | [`docs/guides/integrating-sibling-mcp-servers.md`](../guides/integrating-sibling-mcp-servers.md) | [`docs/gui-automation-win-gui-mcp.md`](file:///D:/Projects/dxo/docs/gui-automation-win-gui-mcp.md) |
-| **Reverse engineering** | — | **Owner** of `docs/re/`, `photolab-automation/RESEARCH.md`, defensive lab |
+| **Reverse engineering** | — | Local-only under `D:\Projects\dxo` (`re-*`, `docs/re/`). Not published to GitHub. Product research stays in `docs/photolab-automation/RESEARCH.md`. |
 | **Cross-links** | [`LINKS.json`](LINKS.json) | [`cross-project-LINKS.json`](file:///D:/Projects/dxo/docs/cross-project-LINKS.json) |
 
 ---
@@ -69,7 +69,7 @@ Both projects **MUST NOT**:
 - Automate license bypass, module extraction, or EULA-prohibited service-bureau patterns.
 - Commit secrets, real `config.json` with credentials, or user-specific export paths as normative defaults.
 
-Both **MUST** follow [`.agent/SAFETY.md`](../../.agent/SAFETY.md) (win-gui-mcp) and [`docs/defensive-lab-runbook.md`](file:///D:/Projects/dxo/docs/defensive-lab-runbook.md) (dxo) for elevated / research work.
+Both **MUST** follow [`.agent/SAFETY.md`](../../.agent/SAFETY.md) (win-gui-mcp). Elevated or reverse-engineering work stays on a local lab machine and is not stored in either GitHub repo.
 
 ### 4.2 win-gui-mcp MUST NOT
 
@@ -110,7 +110,7 @@ When documents disagree:
 | Set exposure via `.dop` without UI | dxo | win-gui-mcp to refresh UI if needed |
 | Backup sidecars before batch | dxo `scripts/` or `dxo_backup_sidecars` | — |
 | Phase 1 gate test for PhotoLab | win-gui-mcp tests | SPEC scenarios in `docs/dxo-photolab/` |
-| Ghidra / static RE follow-up | dxo `docs/re/` | cite in win-gui-mcp RESEARCH only |
+| Ghidra / static RE follow-up | Local files only (`D:\Projects\dxo\docs\re\`, gitignored) | Do not commit RE notes to either remote |
 
 ---
 
