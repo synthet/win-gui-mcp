@@ -15,6 +15,7 @@
     },
     "dxo": {
       "root": "D:\\Projects\\dxo",
+      "remote": "https://github.com/synthet/dxo-photolab-mcp",
       "role": "dxo-photolab-domain-mcp-and-scripts",
       "canonical": {
         "photolabSpec": "docs/photolab-automation/SPEC.md",

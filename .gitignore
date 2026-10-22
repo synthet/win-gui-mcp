@@ -19,8 +19,11 @@ project.fragment.lock.json
 *.coverage
 *.coveragexml
 
-# User-specific MCP config (copy from mcp.example.json locally)
+# User-specific MCP and harness config (copy from examples locally)
 .cursor/mcp.json
+.claude/settings.local.json
+.agents/mcp_config.json
+.agent/local/
 
 # Secrets and credentials
 .env
@@ -45,7 +48,17 @@ secrets.json
 Thumbs.db
 .DS_Store
 Desktop.ini
-/.agent/local/
-/.cursor/mcp.json
-/.claude/settings.local.json
-/.agents/mcp_config.json
+
+# Python tooling caches
+__pycache__/
+*.py[cod]
+
+# Agent session state (promote memory.md; do not commit raw logs)
+.agent-memory/raw-sessions/
+.agent-memory/dreams/
+.agent/scratch/
+
+# Chat exports and local research dumps at the repo root
+/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.md
+/reports/
+/research_notes/

@@ -1,7 +1,7 @@
 # Cross-project constitution: WinGuiMcp ↔ DxO PhotoLab
 
 **Status:** Normative for agents working across both repositories.  
-**Parties:** [`win-gui-mcp`](https://github.com/synthet/win-gui-mcp) (generic Windows desktop MCP) and [`dxo`](file:///D:/Projects/dxo) (DxO PhotoLab workflow + domain MCP).  
+**Parties:** [`win-gui-mcp`](https://github.com/synthet/win-gui-mcp) (generic Windows desktop MCP) and [`dxo-photolab-mcp`](https://github.com/synthet/dxo-photolab-mcp) (local checkout `D:\Projects\dxo`; DxO PhotoLab workflow + domain MCP).  
 **Sibling copy:** [`D:\Projects\dxo\docs\win-gui-mcp-boundaries.md`](file:///D:/Projects/dxo/docs/win-gui-mcp-boundaries.md) (obligations from the `dxo` side).
 
 ---
