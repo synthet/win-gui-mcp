@@ -554,7 +554,10 @@ Waits until a condition holds or timeout.
   "type": "object",
   "required": ["handle", "condition"],
   "properties": {
-    "handle": { "type": "integer" },
+    "handle": {
+      "type": "integer",
+      "description": "Target window handle. Use 0 for OS-level conditions (process/file waits)."
+    },
     "condition": {
       "type": "string",
       "enum": [
@@ -565,12 +568,15 @@ Waits until a condition holds or timeout.
         "window-closed",
         "element-gone",
         "element-hidden",
-        "value-equals"
+        "value-equals",
+        "process-exists",
+        "file-exists",
+        "file-stable"
       ]
     },
     "target": {
       "type": "string",
-      "description": "Locator value: name, automationId, or text depending on condition"
+      "description": "Locator (UI conditions) or process name / file path (OS conditions: process-exists, file-exists, file-stable)"
     },
     "timeoutMs": {
       "type": "integer",
@@ -592,7 +598,7 @@ Waits until a condition holds or timeout.
 }
 ```
 
-**Execution:** Poll UIA with exponential backoff (100 ms → 500 ms cap). Phase 2: UIA event subscriptions. Error: `Timeout`, `WindowGone`.
+**Execution:** Poll UIA with exponential backoff (100 ms → 500 ms cap). OS-level conditions (`process-exists`, `file-exists`, `file-stable`) ignore `handle` (pass `0`); `file-stable` requires the path to exist with unchanged size across two samples (~200 ms). Phase 2: UIA event subscriptions. Error: `Timeout`, `WindowGone`.
 
 ---
 

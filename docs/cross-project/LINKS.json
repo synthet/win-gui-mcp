@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "updated": "2026-10-22",
+  "constitution": "docs/cross-project/DXO_BOUNDARIES_CONSTITUTION.md",
+  "repos": {
+    "win-gui-mcp": {
+      "root": "D:\\Projects\\win-gui-mcp",
+      "remote": "https://github.com/synthet/win-gui-mcp",
+      "role": "generic-windows-uia-mcp",
+      "canonical": {
+        "tools": "docs/tools.md",
+        "guides": "docs/guides/README.md",
+        "architecture": "docs/architecture.md"
+      }
+    },
+    "dxo": {
+      "root": "D:\\Projects\\dxo",
+      "role": "dxo-photolab-domain-mcp-and-scripts",
+      "canonical": {
+        "photolabSpec": "docs/photolab-automation/SPEC.md",
+        "photolabPlan": "docs/photolab-automation/PLAN.md",
+        "mcpGuide": "docs/mcp-server-guide.md",
+        "guiRecipes": "docs/gui-automation-win-gui-mcp.md",
+        "boundaries": "docs/win-gui-mcp-boundaries.md",
+        "synthesis": "docs/synthesis.md"
+      }
+    }
+  },
+  "mcpServerKeys": {
+    "win-gui-mcp": {
+      "repo": "win-gui-mcp",
+      "transport": "stdio",
+      "commandHint": "dotnet run --project src/WinGuiMcp/WinGuiMcp.csproj"
+    },
+    "dxo-photolab": {
+      "repo": "dxo",
+      "transport": "stdio",
+      "commandHint": "D:\\Projects\\dxo\\bin\\mcp\\DxoMcpServer.exe"
+    }
+  },
+  "redirects": {
+    "win-gui-mcp/docs/dxo-photolab": "dxo/docs/photolab-automation"
+  }
+}

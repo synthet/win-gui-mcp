@@ -271,13 +271,27 @@ public sealed class ToolService
     public object WaitFor(int handle, string condition, string? target, int timeoutMs)
     {
         _session.EnsureNotExpired();
-        _windowEnumerator.ValidateHandle(handle);
+        var osLevel = OsWaitConditions.IsOsLevelCondition(condition);
+        if (!osLevel)
+            _windowEnumerator.ValidateHandle(handle);
+        else if (string.IsNullOrWhiteSpace(target))
+            throw new ToolException(ErrorCodes.InvalidArgument, "target is required for OS-level wait conditions.");
 
         var sw = Stopwatch.StartNew();
         var delayMs = 100;
 
         while (sw.ElapsedMilliseconds <= timeoutMs)
         {
+            if (osLevel)
+            {
+                if (OsWaitConditions.TryEvaluate(condition, target, out var osRef))
+                    return new { ok = true, @ref = osRef, elapsedMs = (int)sw.ElapsedMilliseconds };
+
+                Thread.Sleep(delayMs);
+                delayMs = Math.Min(delayMs * 2, 500);
+                continue;
+            }
+
             if (condition != "window-closed" && !NativeMethods.IsWindow(handle))
                 throw new ToolException(ErrorCodes.WindowGone, "Window closed while waiting.");
 

@@ -30,7 +30,10 @@ Read [errors.md](errors.md) and [security.md](security.md) alongside `tools.md` 
 | [phases.md](phases.md) | Phased delivery plan with benchmark gates |
 | [security.md](security.md) | UIPI, elevation, deployment warnings |
 | [requirements/README.md](requirements/README.md) | Technical requirements index (traceability; does not override schemas) |
-| [dxo-photolab/README.md](dxo-photolab/README.md) | DxO PhotoLab 10 UI automation, UIA patterns, sidecar integration, and research |
+| [guides/README.md](guides/README.md) | Generic desktop automation patterns and sibling MCP integration |
+| [dxo-photolab/README.md](dxo-photolab/README.md) | Redirect to canonical PhotoLab docs in `D:\Projects\dxo\docs\photolab-automation\` |
+| [cross-project/DXO_BOUNDARIES_CONSTITUTION.md](cross-project/DXO_BOUNDARIES_CONSTITUTION.md) | Normative boundaries vs sibling repo `D:\Projects\dxo` |
+| [cross-project/LINKS.json](cross-project/LINKS.json) | Machine-readable cross-repo paths and MCP server keys |
 
 ## Research (background only)
 

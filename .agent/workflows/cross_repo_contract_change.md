@@ -13,6 +13,7 @@ breaking a sibling/consumer repo or letting docs drift.
 
 - Any change to a public API path/field, a DB column a consumer reads, a shared type, or a
   user-facing label that another repo depends on.
+- **WinGuiMcp ↔ DxO PhotoLab:** follow [`docs/cross-project/DXO_BOUNDARIES_CONSTITUTION.md`](../../docs/cross-project/DXO_BOUNDARIES_CONSTITUTION.md) (owner: generic tools in `win-gui-mcp`, `dxo_*` in `D:\Projects\dxo`).
 
 ## Principle
 

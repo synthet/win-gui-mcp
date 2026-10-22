@@ -1,26 +1,18 @@
-# DxO PhotoLab 10 Automation & Control
+# DxO PhotoLab documentation (relocated)
 
-This directory contains specifications, implementation plans, and reference documentation for controlling and automating **DxO PhotoLab 10** through **WinGuiMcp** (UI Automation / FlaUI UIA3) and parametric sidecar scripting.
+**Canonical PhotoLab specs and plans now live in the domain repo:**
 
----
+| Document | Location |
+|----------|----------|
+| Index | [`D:\Projects\dxo\docs\photolab-automation\README.md`](file:///D:/Projects/dxo/docs/photolab-automation/README.md) |
+| SPEC | [`D:\Projects\dxo\docs\photolab-automation\SPEC.md`](file:///D:/Projects/dxo/docs/photolab-automation/SPEC.md) |
+| PLAN | [`D:\Projects\dxo\docs\photolab-automation\PLAN.md`](file:///D:/Projects/dxo/docs/photolab-automation/PLAN.md) |
+| Controls reference | [`D:\Projects\dxo\docs\photolab-automation\CONTROLS_REFERENCE.md`](file:///D:/Projects/dxo/docs/photolab-automation/CONTROLS_REFERENCE.md) |
+| Research | [`D:\Projects\dxo\docs\photolab-automation\RESEARCH.md`](file:///D:/Projects/dxo/docs/photolab-automation/RESEARCH.md) |
 
-## Document Index
+**Cross-repo rules:** [`../cross-project/DXO_BOUNDARIES_CONSTITUTION.md`](../cross-project/DXO_BOUNDARIES_CONSTITUTION.md)  
+**Link registry:** [`../cross-project/LINKS.json`](../cross-project/LINKS.json)
 
-1. [**`SPEC.md`**](SPEC.md) — Feature and system specification for DxO PhotoLab 10 automation (modes, control surfaces, UIA patterns, sidecar synchronization, acceptance criteria).
-2. [**`PLAN.md`**](PLAN.md) — Phased implementation and execution plan (UIA element mapping, recipe development, sidecar integration, and automated verification).
-3. [**`CONTROLS_REFERENCE.md`**](CONTROLS_REFERENCE.md) — Exhaustive control hierarchy mapping from the workspace UI, verified keyboard shortcuts, UIA pattern mapping, and `.dop` Lua parameter schema.
-4. [**`RESEARCH.md`**](RESEARCH.md) — Exhaustive deep technical research report on DxO PhotoLab 10 plugins, APIs, MCP, community experiments (`DopCor`, `DxO-Batch-Image`), EULA boundaries, and automation tiers.
+WinGuiMcp implements **generic** UIA tools only; PhotoLab UI recipes that call those tools are in [`D:\Projects\dxo\docs\gui-automation-win-gui-mcp.md`](file:///D:/Projects/dxo/docs/gui-automation-win-gui-mcp.md).
 
----
-
-## Executive Summary
-
-DxO PhotoLab 10 is a non-destructive RAW photo editor built on:
-- **Presentation Layer**: Windows Presentation Foundation (WPF) with MVVM (`CommunityToolkit.Mvvm`).
-- **Render Viewport**: Direct2D / Direct3D 11 (`SharpDX`) / DirectML hardware acceleration for previewing RAW frames.
-- **Parametric Storage**: Human-readable Lua table sidecars (`<filename>.<ext>.dop`) and `.preset` files.
-- **Processing Engine**: Multithreaded background process `DxO.PhotoLab.ProcessingCore.exe` utilizing ONNX Runtime for DeepPRIME / DeepPRIME XD AI demosaicing and denoising.
-
-Because DxO PhotoLab lacks an official public CLI or REST API, automation is achieved via a **hybrid control architecture**:
-- **WinGuiMcp (UIA3 / FlaUI)**: Direct control of WPF controls (tabs, sliders, buttons, filmstrip, export).
-- **Sidecar Scripting (`.dop`)**: High-throughput batch parameter generation written directly to Lua sidecar files before triggering batch processing.
+This folder is a **stub** so old links under `docs/dxo-photolab/` keep working.
