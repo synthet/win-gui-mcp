@@ -17,11 +17,11 @@ WinGuiMcp is intentionally **generic**. Domain adapters (separate executables, s
 
 Machine-readable link registry: [`cross-project/LINKS.json`](../cross-project/LINKS.json).
 
-PhotoLab UI recipes using WinGuiMcp: [`D:\Projects\dxo\docs\gui-automation-win-gui-mcp.md`](file:///D:/Projects/dxo/docs/gui-automation-win-gui-mcp.md).
+PhotoLab UI recipes using WinGuiMcp: [`D:\Projects\dxo-photolab-mcp\docs\gui-automation-win-gui-mcp.md`](file:///D:/Projects/dxo-photolab-mcp/docs/gui-automation-win-gui-mcp.md).
 
 ## Client configuration sketch
 
-See `D:\Projects\dxo\config\mcp.dual-server.example.json` for a two-server template.
+See `D:\Projects\dxo-photolab-mcp\config\mcp.dual-server.example.json` for a two-server template.
 
 ## Orchestration
 

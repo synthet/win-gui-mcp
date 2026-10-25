@@ -28,6 +28,80 @@ public sealed class InputSimulator
         }
     }
 
+    public void MoveTo(int x, int y)
+    {
+        var target = NativeMethods.WindowFromPoint(new NativeMethods.POINT { X = x, Y = y });
+        if (target == 0)
+            target = NativeMethods.GetForegroundWindow();
+
+        InputBoundary.ThrowIfBlocked(target);
+        MoveMouse(x, y);
+    }
+
+    public void Drag(int startX, int startY, int endX, int endY, string button = "left")
+    {
+        var startTarget = NativeMethods.WindowFromPoint(new NativeMethods.POINT { X = startX, Y = startY });
+        if (startTarget == 0)
+            startTarget = NativeMethods.GetForegroundWindow();
+        InputBoundary.ThrowIfBlocked(startTarget);
+
+        var (down, up) = button switch
+        {
+            "right" => (NativeMethods.MOUSEEVENTF_RIGHTDOWN, NativeMethods.MOUSEEVENTF_RIGHTUP),
+            "middle" => (NativeMethods.MOUSEEVENTF_MIDDLEDOWN, NativeMethods.MOUSEEVENTF_MIDDLEUP),
+            _ => (NativeMethods.MOUSEEVENTF_LEFTDOWN, NativeMethods.MOUSEEVENTF_LEFTUP)
+        };
+
+        MoveMouse(startX, startY);
+        SendMouse(down);
+
+        const int steps = 10;
+        for (var i = 1; i <= steps; i++)
+        {
+            var curX = startX + (endX - startX) * i / steps;
+            var curY = startY + (endY - startY) * i / steps;
+            MoveMouse(curX, curY);
+            Thread.Sleep(10);
+        }
+
+        SendMouse(up);
+    }
+
+    public void ScrollWheel(int x, int y, string direction, int clicks = 3)
+    {
+        var target = NativeMethods.WindowFromPoint(new NativeMethods.POINT { X = x, Y = y });
+        if (target == 0)
+            target = NativeMethods.GetForegroundWindow();
+        InputBoundary.ThrowIfBlocked(target);
+
+        MoveMouse(x, y);
+
+        var normDir = direction.ToLowerInvariant();
+        var isHorizontal = normDir is "left" or "right";
+        var flag = isHorizontal ? NativeMethods.MOUSEEVENTF_HWHEEL : NativeMethods.MOUSEEVENTF_WHEEL;
+        var sign = normDir switch
+        {
+            "up" or "right" => 1,
+            "down" or "left" => -1,
+            _ => throw new ToolException(ErrorCodes.InvalidArgument, $"Invalid scroll direction: {direction}. Expected up, down, left, or right.")
+        };
+
+        var delta = (uint)(sign * Math.Max(1, clicks) * NativeMethods.WHEEL_DELTA);
+        var input = new NativeMethods.INPUT
+        {
+            Type = NativeMethods.INPUT_MOUSE,
+            U = new NativeMethods.InputUnion
+            {
+                Mouse = new NativeMethods.MOUSEINPUT
+                {
+                    mouseData = delta,
+                    dwFlags = flag
+                }
+            }
+        };
+        SendInputs([input]);
+    }
+
     public void TypeUnicode(string text)
     {
         InputBoundary.ThrowIfBlocked(NativeMethods.GetForegroundWindow());
@@ -175,6 +249,17 @@ public sealed class InputSimulator
             "space" => 0x20,
             "backspace" => 0x08,
             "delete" or "del" => 0x2E,
+            "insert" or "ins" => 0x2D,
+            "home" => 0x24,
+            "end" => 0x23,
+            "pageup" or "pgup" => 0x21,
+            "pagedown" or "pgdn" => 0x22,
+            "left" or "arrowleft" => 0x25,
+            "up" or "arrowup" => 0x26,
+            "right" or "arrowright" => 0x27,
+            "down" or "arrowdown" => 0x28,
+            "plus" or "+" or "=" => 0xBB,
+            "minus" or "-" => 0xBD,
             "f1" => 0x70,
             "f2" => 0x71,
             "f3" => 0x72,

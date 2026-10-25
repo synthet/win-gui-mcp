@@ -9,7 +9,7 @@ Instructions for coding agents working in this repository.
 | Layer | Technology |
 |-------|------------|
 | Language | C# |
-| Runtime | .NET 9 |
+| Runtime | .NET 10 |
 | UIA | FlaUI 5 (UIA3 primary, UIA2 fallback) |
 | MCP | `ModelContextProtocol` SDK, stdio JSON-RPC 2.0 |
 | Input | UIA control patterns first; P/Invoke `SendInput` fallback |
@@ -122,7 +122,7 @@ Server key: **`win-gui-mcp`** (stdio via `dotnet run`).
 
 ## Code style
 
-- C# / .NET 9; match module names and layering in [`docs/architecture.md`](docs/architecture.md).
+- C# / .NET 10; match module names and layering in [`docs/architecture.md`](docs/architecture.md).
 - FlaUI UIA3 primary; UIA2 fallback for legacy WinForms only.
 - Small modules; dependency injection via `Microsoft.Extensions.Hosting`.
 - Structured tool errors with codes from [`docs/errors.md`](docs/errors.md).

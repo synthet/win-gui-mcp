@@ -16,6 +16,7 @@ public sealed class ToolService
     private readonly PatternExecutor _patternExecutor;
     private readonly InputSimulator _inputSimulator;
     private readonly WindowCapture _windowCapture;
+    public UiaDispatcher Dispatcher { get; }
 
     public ToolService(
         SnapshotSession session,
@@ -23,7 +24,8 @@ public sealed class ToolService
         UiaSnapshotBuilder snapshotBuilder,
         PatternExecutor patternExecutor,
         InputSimulator inputSimulator,
-        WindowCapture windowCapture)
+        WindowCapture windowCapture,
+        UiaDispatcher? dispatcher = null)
     {
         _session = session;
         _windowEnumerator = windowEnumerator;
@@ -31,6 +33,7 @@ public sealed class ToolService
         _patternExecutor = patternExecutor;
         _inputSimulator = inputSimulator;
         _windowCapture = windowCapture;
+        Dispatcher = dispatcher ?? UiaDispatcher.Shared;
     }
 
     public object ListWindows(string? filter, bool includeMinimized)
@@ -66,6 +69,102 @@ public sealed class ToolService
         _windowEnumerator.FocusWindow(handle);
         _session.TouchActivity();
         return new { ok = true, handle, focused = true };
+    }
+
+    public object CloseWindow(int handle)
+    {
+        _session.EnsureNotExpired();
+        _windowEnumerator.ValidateHandle(handle);
+        InputBoundary.ThrowIfBlocked((nint)handle);
+
+        var closedViaPattern = false;
+        try
+        {
+            var root = _snapshotBuilder.Automation.FromHandle((nint)handle);
+            if (root is not null && root.Patterns.Window.IsSupported)
+            {
+                root.Patterns.Window.Pattern.Close();
+                closedViaPattern = true;
+            }
+        }
+        catch { }
+
+        if (!closedViaPattern)
+            NativeMethods.PostMessageW((nint)handle, NativeMethods.WM_CLOSE, 0, 0);
+
+        _session.TouchActivity();
+        return new { ok = true, handle, method = closedViaPattern ? "WindowPattern" : "WM_CLOSE" };
+    }
+
+    public object SetWindowState(int handle, string state, int? x = null, int? y = null, int? width = null, int? height = null)
+    {
+        _session.EnsureNotExpired();
+        _windowEnumerator.ValidateHandle(handle);
+        InputBoundary.ThrowIfBlocked((nint)handle);
+
+        var normState = (state ?? "normal").ToLowerInvariant();
+        var cmd = normState switch
+        {
+            "minimize" or "minimized" => NativeMethods.SW_MINIMIZE,
+            "maximize" or "maximized" => NativeMethods.SW_MAXIMIZE,
+            "restore" or "normal" => NativeMethods.SW_RESTORE,
+            _ => throw new ToolException(ErrorCodes.InvalidArgument, $"Invalid window state '{state}'. Expected minimize, maximize, restore, or normal.")
+        };
+
+        NativeMethods.ShowWindow((nint)handle, cmd);
+
+        if (x.HasValue || y.HasValue || width.HasValue || height.HasValue)
+        {
+            if (!NativeMethods.GetWindowRect((nint)handle, out var rect))
+                throw new ToolException(ErrorCodes.InternalError, "Could not read current window bounds.");
+
+            var nx = x ?? rect.Left;
+            var ny = y ?? rect.Top;
+            var nw = width ?? rect.Width;
+            var nh = height ?? rect.Height;
+            if (nw <= 0 || nh <= 0)
+                throw new ToolException(ErrorCodes.InvalidArgument, "Window width and height must be positive.");
+
+            NativeMethods.MoveWindow((nint)handle, nx, ny, nw, nh, true);
+        }
+
+        _session.TouchActivity();
+        return new { ok = true, handle, state = normState };
+    }
+
+    public object GetActiveModal(int handle)
+    {
+        _session.EnsureNotExpired();
+        _windowEnumerator.ValidateHandle(handle);
+        _session.TouchActivity();
+
+        var hwnd = (nint)handle;
+        var isMainEnabled = NativeMethods.IsWindowEnabled(hwnd);
+        var popup = NativeMethods.GetLastActivePopup(hwnd);
+        var hasPopup = popup != 0 && popup != hwnd && NativeMethods.IsWindow(popup) && NativeMethods.IsWindowVisible(popup);
+
+        if (hasPopup)
+        {
+            return new
+            {
+                ok = true,
+                handle,
+                isMainWindowEnabled = isMainEnabled,
+                hasModal = true,
+                modalHandle = (int)popup,
+                modalTitle = WindowEnumerator.GetWindowTitle(popup)
+            };
+        }
+
+        return new
+        {
+            ok = true,
+            handle,
+            isMainWindowEnabled = isMainEnabled,
+            hasModal = !isMainEnabled,
+            modalHandle = (int?)null,
+            modalTitle = (string?)null
+        };
     }
 
     public SnapshotEnvelope Snapshot(
@@ -104,7 +203,7 @@ public sealed class ToolService
 
         var (windowIndex, _) = RefFormat.Parse(refValue);
         var snapshotId = _session.GetCurrentSnapshotId(windowIndex);
-        var node = _session.RefTable.GetProperties(refValue, snapshotId);
+        var node = _snapshotBuilder.ReadProperties(_session.RefTable.Resolve(refValue, snapshotId));
         return GetPropertiesEnvelope.From(node);
     }
 
@@ -134,7 +233,60 @@ public sealed class ToolService
         return BuildActionResponse(result.Method, refValue, includeSnapshot);
     }
 
-    public object TypeText(string text, string? refValue, bool clearFirst, bool submit, bool includeSnapshot)
+    public object Drag(
+        string? sourceRef,
+        int? startX,
+        int? startY,
+        string? targetRef,
+        int? endX,
+        int? endY,
+        string button,
+        bool includeSnapshot)
+    {
+        _session.EnsureNotExpired();
+        RefEntry? sourceEntry = null;
+        RefEntry? targetEntry = null;
+
+        if (!string.IsNullOrEmpty(sourceRef))
+        {
+            var (wIdx, _) = RefFormat.Parse(sourceRef);
+            sourceEntry = _session.RefTable.Resolve(sourceRef, _session.GetCurrentSnapshotId(wIdx));
+        }
+
+        if (!string.IsNullOrEmpty(targetRef))
+        {
+            var (wIdx, _) = RefFormat.Parse(targetRef);
+            targetEntry = _session.RefTable.Resolve(targetRef, _session.GetCurrentSnapshotId(wIdx));
+        }
+
+        var result = _patternExecutor.Drag(sourceEntry, startX, startY, targetEntry, endX, endY, button);
+        _session.TouchActivity();
+        return BuildActionResponse(result.Method, sourceRef ?? targetRef, includeSnapshot);
+    }
+
+    public object Scroll(
+        string? refValue,
+        int? pointX,
+        int? pointY,
+        string direction,
+        int amount,
+        bool includeSnapshot)
+    {
+        _session.EnsureNotExpired();
+        RefEntry? entry = null;
+
+        if (!string.IsNullOrEmpty(refValue))
+        {
+            var (wIdx, _) = RefFormat.Parse(refValue);
+            entry = _session.RefTable.Resolve(refValue, _session.GetCurrentSnapshotId(wIdx));
+        }
+
+        var result = _patternExecutor.Scroll(entry, pointX, pointY, direction, amount);
+        _session.TouchActivity();
+        return BuildActionResponse(result.Method, refValue, includeSnapshot);
+    }
+
+    public object TypeText(string text, string? refValue, bool clearFirst, bool submit, bool includeSnapshot, string method = "auto")
     {
         _session.EnsureNotExpired();
         RefEntry? entry = null;
@@ -146,7 +298,7 @@ public sealed class ToolService
             entry = _session.RefTable.Resolve(refValue, snapshotId);
         }
 
-        var result = _patternExecutor.TypeText(entry, text, clearFirst, submit);
+        var result = _patternExecutor.TypeText(entry, text, clearFirst, submit, method);
         _session.TouchActivity();
         return BuildActionResponse(result.Method, refValue, includeSnapshot);
     }
@@ -170,6 +322,20 @@ public sealed class ToolService
             _windowEnumerator.FocusWindow(handle.Value);
 
         _inputSimulator.SendHotkey(keys);
+        _session.TouchActivity();
+        return BuildActionResponse("SendInput", null, includeSnapshot);
+    }
+
+    public object PressKey(string key, int? handle, int count = 1, bool includeSnapshot = false)
+    {
+        _session.EnsureNotExpired();
+
+        if (handle is > 0)
+            _windowEnumerator.FocusWindow(handle.Value);
+
+        for (var i = 0; i < Math.Max(1, count); i++)
+            _inputSimulator.SendHotkey(key);
+
         _session.TouchActivity();
         return BuildActionResponse("SendInput", null, includeSnapshot);
     }
@@ -268,50 +434,63 @@ public sealed class ToolService
         };
     }
 
-    public object WaitFor(int handle, string condition, string? target, int timeoutMs)
+    public object WaitFor(int handle, string condition, string? target, int timeoutMs) =>
+        WaitForAsync(handle, condition, target, timeoutMs).GetAwaiter().GetResult();
+
+    public async Task<object> WaitForAsync(int handle, string condition, string? target, int timeoutMs,
+        int settleMs = 200, long minBytes = 1, string? changedSinceUtc = null, CancellationToken cancellationToken = default)
     {
-        _session.EnsureNotExpired();
-        var osLevel = OsWaitConditions.IsOsLevelCondition(condition);
-        if (!osLevel)
-            _windowEnumerator.ValidateHandle(handle);
-        else if (string.IsNullOrWhiteSpace(target))
-            throw new ToolException(ErrorCodes.InvalidArgument, "target is required for OS-level wait conditions.");
-
-        var sw = Stopwatch.StartNew();
-        var delayMs = 100;
-
-        while (sw.ElapsedMilliseconds <= timeoutMs)
+        cancellationToken.ThrowIfCancellationRequested();
+        if (timeoutMs < 0 || timeoutMs > 3600000 || settleMs < 0 || settleMs > 60000 || minBytes < 0)
+            throw new ToolException(ErrorCodes.InvalidArgument, "Invalid timeout, quiet duration, or minimum file size.");
+        DateTimeOffset? changedSince = null;
+        if (changedSinceUtc is not null)
         {
+            if (!System.Text.RegularExpressions.Regex.IsMatch(changedSinceUtc, @"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,7})?(?:Z|[+-]\d{2}:\d{2})$") ||
+                !DateTimeOffset.TryParse(changedSinceUtc, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal, out var timestamp))
+                throw new ToolException(ErrorCodes.InvalidArgument, "changedSinceUtc must be an ISO timestamp.");
+            changedSince = timestamp;
+        }
+        string[] known = ["process-exists", "file-exists", "file-stable", "window-active", "window-closed", "element-exists", "element-enabled", "text-visible", "element-gone", "element-hidden", "value-equals"];
+        if (!known.Contains(condition)) throw new ToolException(ErrorCodes.InvalidArgument, $"Unknown condition: {condition}");
+        var osLevel = OsWaitConditions.IsOsLevelCondition(condition);
+        if (!osLevel) await Dispatcher.InvokeAsync(() => { _session.EnsureNotExpired(); _windowEnumerator.ValidateHandle(handle); return true; }, cancellationToken);
+        else if (string.IsNullOrWhiteSpace(target))
+            throw new ToolException(ErrorCodes.InvalidArgument, "target is required for OS-level waits.");
+        var readiness = new FileReadiness();
+        var stopwatch = Stopwatch.StartNew();
+        var delayMs = 50;
+        while (stopwatch.ElapsedMilliseconds <= timeoutMs)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             if (osLevel)
             {
-                if (OsWaitConditions.TryEvaluate(condition, target, out var osRef))
-                    return new { ok = true, @ref = osRef, elapsedMs = (int)sw.ElapsedMilliseconds };
-
-                Thread.Sleep(delayMs);
-                delayMs = Math.Min(delayMs * 2, 500);
-                continue;
+                var ready = condition == "file-stable"
+                    ? readiness.Observe(target!, settleMs, minBytes, changedSince)
+                    : OsWaitConditions.TryEvaluate(condition, target, out _);
+                if (ready) return new { ok = true, condition, target, elapsedMs = (int)stopwatch.ElapsedMilliseconds };
             }
-
-            if (condition != "window-closed" && !NativeMethods.IsWindow(handle))
-                throw new ToolException(ErrorCodes.WindowGone, "Window closed while waiting.");
-
-            try
+            else
             {
-                var outcome = EvaluateWaitCondition(handle, condition, target);
-                if (outcome is not null)
+                if (condition != "window-closed" && !NativeMethods.IsWindow(handle))
+                    throw new ToolException(ErrorCodes.WindowGone, "Window closed while waiting.");
+                try
                 {
-                    return new { ok = true, outcome.Value.Ref, elapsedMs = (int)sw.ElapsedMilliseconds };
+                    var outcome = await Dispatcher.InvokeAsync(() => EvaluateWaitCondition(handle, condition, target), cancellationToken);
+                    if (outcome is not null)
+                    {
+                        if (RefFormat.IsValid(outcome.Value.Ref)) return new { ok = true, outcome.Value.Ref, elapsedMs = (int)stopwatch.ElapsedMilliseconds };
+                        return new { ok = true, condition, target, elapsedMs = (int)stopwatch.ElapsedMilliseconds };
+                    }
                 }
+                catch (ToolException ex) when (ex.Error.Code == ErrorCodes.ElementNotFound) { }
             }
-            catch (ToolException)
-            {
-                // Keep polling for element conditions.
-            }
-
-            Thread.Sleep(delayMs);
+            var remaining = timeoutMs - (int)stopwatch.ElapsedMilliseconds;
+            if (remaining <= 0) break;
+            await Task.Delay(Math.Min(delayMs, remaining), cancellationToken);
             delayMs = Math.Min(delayMs * 2, 500);
         }
-
         throw new ToolException(ErrorCodes.Timeout, $"wait_for timed out after {timeoutMs} ms.");
     }
 
@@ -338,21 +517,6 @@ public sealed class ToolService
 
         var windowIndex = _session.TryGetWindowIndex(handle);
         var snapshotId = windowIndex.HasValue ? _session.GetCurrentSnapshotId(windowIndex.Value) : null;
-
-        // 1. Fast check if already available in current ref table
-        if (windowIndex.HasValue && snapshotId.HasValue)
-        {
-            try
-            {
-                var entry = _session.RefTable.FindElement(windowIndex.Value, snapshotId.Value, "name", target, "contains", 0);
-                if ((!requireEnabled || entry.Element.IsEnabled) && (!requireVisible || !entry.Element.IsOffscreen))
-                    return (entry.Ref, entry.Node.Role, entry.Node.Name);
-            }
-            catch (ToolException)
-            {
-                // Not in current table; inspect live tree below
-            }
-        }
 
         // 2. Targeted live UIA search without full snapshot rebuild
         FlaUI.Core.AutomationElements.AutomationElement? root;
@@ -395,7 +559,8 @@ public sealed class ToolService
         }
         catch
         {
-            return ($"w{registeredWinIdx.Value}e_wait", match.ControlType.ToString(), match.Name);
+            var node = _snapshotBuilder.RegisterElement(_session, handle, match);
+            return (node.Ref, node.Role, node.Name);
         }
     }
 
@@ -445,8 +610,8 @@ public sealed class ToolService
 
         if (match is not null)
         {
-            var winIdx = _session.RegisterWindow((nint)handle);
-            return ($"w{winIdx}e_wait", match.ControlType.ToString(), match.Name);
+            var node = _snapshotBuilder.RegisterElement(_session, handle, match);
+            return (node.Ref, node.Role, node.Name);
         }
 
         return null;

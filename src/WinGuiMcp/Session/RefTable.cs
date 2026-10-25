@@ -85,7 +85,8 @@ public sealed class RefTable
 
     private static bool Matches(UemNode node, string by, string value, string matchMode)
     {
-        var fieldValue = by switch
+        var normalizedBy = WinGuiMcp.Tools.ToolCatalogRegistry.NormalizeLocatorBy(by);
+        var fieldValue = normalizedBy switch
         {
             "name" => node.Name,
             "role" => node.Role,

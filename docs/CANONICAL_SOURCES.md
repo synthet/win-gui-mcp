@@ -23,7 +23,7 @@ Authority map for AI agents and implementers. When docs disagree, the files list
 | Commands, build, MCP setup | [`../AGENTS.md`](../AGENTS.md) | Overrides generic guidance for this repo |
 | Infra inventory | [`../.agent/AGENT_INFRA_INVENTORY.md`](../.agent/AGENT_INFRA_INVENTORY.md) | Paths to rules, commands, skills |
 | Safety guardrails | [`../.agent/SAFETY.md`](../.agent/SAFETY.md) | Windows automation behavior |
-| WinGuiMcp ↔ DxO PhotoLab sibling repo | [`cross-project/DXO_BOUNDARIES_CONSTITUTION.md`](cross-project/DXO_BOUNDARIES_CONSTITUTION.md), [`cross-project/LINKS.json`](cross-project/LINKS.json) | Tool namespaces, ownership, MCP keys; PhotoLab SPEC in `D:\Projects\dxo\docs\photolab-automation\` |
+| WinGuiMcp ↔ DxO PhotoLab sibling repo | [`cross-project/DXO_BOUNDARIES_CONSTITUTION.md`](cross-project/DXO_BOUNDARIES_CONSTITUTION.md), [`cross-project/LINKS.json`](cross-project/LINKS.json) | Tool namespaces, ownership, MCP keys; PhotoLab SPEC in `D:\Projects\dxo-photolab-mcp\docs\photolab-automation\` |
 | Generic automation guides | [`guides/README.md`](guides/README.md) | Patterns and multi-server integration (non-schema) |
 
 ## Non-normative (background only)

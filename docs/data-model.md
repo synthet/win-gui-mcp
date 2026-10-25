@@ -20,11 +20,13 @@ w<windowIndex>e<elementIndex>
 | Part | Meaning |
 |------|---------|
 | `windowIndex` | 1-based index into the server's window registry for the current session (not the raw HWND). |
-| `elementIndex` | 1-based depth-first index among included nodes in that window's pruned tree. |
+| `elementIndex` | Monotonically allocated positive index for the server lifetime; never recycled after snapshot refresh. |
 
 Examples: `w1e1` (window root), `w1e42`, `w2e7`.
 
 Refs are **not** stable across snapshots. After `snapshot`, the agent must use refs from the latest response.
+
+Window registry indices also are not recycled on session clear. An invalidated ref must fail resolution, rather than later naming a different element. `get_properties` reads current UIA properties through the ref; snapshot nodes remain a point-in-time view.
 
 ## Window handles (HWND)
 
@@ -102,6 +104,26 @@ Each node in a snapshot tree conforms to this shape:
       "items": { "type": "string" },
       "description": "Supported interaction patterns: Invoke, Value, Toggle, ExpandCollapse, Scroll, Selection, …"
     },
+    "patternValues": {
+      "type": "object",
+      "properties": {
+        "rangeValue": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number" },
+            "minimum": { "type": "number" },
+            "maximum": { "type": "number" },
+            "smallChange": { "type": "number" },
+            "readOnly": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "toggle": { "type": "string" },
+        "selected": { "type": "boolean" },
+        "expandCollapse": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "children": {
       "type": "array",
       "items": { "$ref": "#" }
@@ -121,8 +143,13 @@ Each node in a snapshot tree conforms to this shape:
 | ClassName | `className` | Omitted if empty |
 | IsEnabled | `enabled` | Omitted if true (default) |
 | ValuePattern.Value | `value` | Text fields, combos |
+| RangeValuePattern.Value | `value`, `patternValues.rangeValue` | Numeric value string plus numeric limits, step, and read-only state |
+| Toggle / SelectionItem / ExpandCollapse | `patternValues` | Current pattern-specific state, if supported |
+
 | Supported patterns | `patterns` | Listed by name |
 | BoundingRectangle | *(server only)* | Never sent to agent |
+
+Values and pattern values are omitted for protected (`IsPassword`) controls.
 
 ### CV nodes (Phase 3)
 

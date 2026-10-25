@@ -1,5 +1,7 @@
 # MCP tool reference
 
+Tool responses retain their readable JSON text content and also return the same object as MCP `structuredContent`. Tool execution errors set MCP `isError: true`; an embedded `ok: false` alone is insufficient. Each tool advertises an object output schema and read/write annotations. These annotations describe behavior and do not authorize it. Existing tool names and text payload shapes remain available.
+
 Normative definitions for WinGuiMcp MCP tools. Phase 1 tools are **required for MVP**; Phase 2+ tools are specified now but implemented in later phases (see [phases.md](phases.md)).
 
 UEM node shapes: [data-model.md](data-model.md). Errors: [errors.md](errors.md).
@@ -304,7 +306,7 @@ Returns full UEM record for a ref (still no bbox in agent JSON).
 
 **Output:** UEM node object per [data-model.md](data-model.md).
 
-**Execution:** Session table lookup. Error: `ElementNotFound`.
+**Execution:** Resolve the ref, then read current UIA value, range limits, toggle/selection/expand state, visibility and enabled properties. This is live readback, not the cached snapshot record. Protected control values are omitted. Error: `ElementNotFound`.
 
 ---
 
@@ -581,8 +583,11 @@ Waits until a condition holds or timeout.
     "timeoutMs": {
       "type": "integer",
       "default": 5000,
-      "minimum": 0
-    }
+      "minimum": 0, "maximum": 3600000
+    },
+    "settleMs": { "type": "integer", "default": 200, "minimum": 0, "maximum": 60000 },
+    "minBytes": { "type": "integer", "default": 1, "minimum": 0 },
+    "changedSinceUtc": { "type": "string", "format": "date-time" }
   },
   "additionalProperties": false
 }
@@ -598,7 +603,7 @@ Waits until a condition holds or timeout.
 }
 ```
 
-**Execution:** Poll UIA with exponential backoff (100 ms → 500 ms cap). OS-level conditions (`process-exists`, `file-exists`, `file-stable`) ignore `handle` (pass `0`); `file-stable` requires the path to exist with unchanged size across two samples (~200 ms). Phase 2: UIA event subscriptions. Error: `Timeout`, `WindowGone`.
+**Execution:** Poll asynchronously with exponential backoff (50 ms → 500 ms cap), a bounded deadline, and request cancellation. OS-level conditions ignore `handle` (pass `0`). `file-stable` requires at least `minBytes` and unchanged size/last-write timestamp throughout `settleMs`; optional `changedSinceUtc` requires a later last-write timestamp. Old files can pass when freshness is not requested. This is a file-readiness predicate, not proof of application export success or image validity. Successful element waits return registered numeric refs. OS/window/absence waits return `condition` and `target` without an actionable ref. Error: `Timeout`, `WindowGone`, `InvalidArgument`.
 
 ---
 
@@ -642,13 +647,41 @@ Input: `{ ref }`. Uses `TextPattern`, `ValuePattern`, or element `Name`. Returns
 
 Input: `{ x, y }`. Uses `AutomationElement.FromPoint` for interactive element debugging. Returns `{ ok: true, role, name, automationId, className, isEnabled, isOffscreen }`.
 
-### `scroll`
+### `scroll` (Implemented)
 
-Input: `{ ref?, point?, direction: "up"|"down"|"left"|"right", amount: number }`. Uses `ScrollPattern` or mouse wheel SendInput. Phase 2.
+Input: `{ ref?, x?, y?, direction: "up"|"down"|"left"|"right", amount: number, includeSnapshot? }`. Uses `ScrollPattern` or mouse wheel SendInput.
 
-### `drag`
+### `drag` (Implemented)
 
-Input: `{ fromRef|fromPoint, toRef|toPoint }`. SendInput drag sequence. Phase 2.
+Input: `{ sourceRef?, startX?, startY?, targetRef?, endX?, endY?, button?, includeSnapshot? }`. SendInput drag sequence.
+
+### `close_window` (Implemented)
+
+Input: `{ handle }`. Closes a window cleanly via `WindowPattern.Close()` or `WM_CLOSE`.
+
+### `set_window_state` (Implemented)
+
+Input: `{ handle, state: "minimize"|"maximize"|"restore"|"normal", x?, y?, width?, height? }`. Controls window state and optional placement/dimensions.
+
+### `get_active_modal` (Implemented)
+
+Input: `{ handle }`. Checks whether a window is disabled by or owns an active modal dialog popup (`GetLastActivePopup` + `IsWindowEnabled`).
+
+### `press_key` (Implemented)
+
+Input: `{ key, handle?, count?, includeSnapshot? }`. Sends a single key (`Tab`, `Enter`, `Escape`, `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Delete`, `Backspace`, `F1`-`F12`) one or more times.
+
+### `search_tools` (Implemented)
+
+Input: `{ query, category?, readOnlyOnly?, includeSchemas?, limit? }`. Searches the WinGuiMcp tool catalog, built-in/external plugins (`window`, `perception`, `action`, `capture`, `discovery`), UIA pattern aliases (e.g. `RangeValuePattern.SetValue`, `SelectionItemPattern.Select`, `InvokePattern.Invoke`), and UIA property locators (`AutomationId`, `Name`, `ControlType`, `ClassName`).
+
+### `describe_tool` (Implemented)
+
+Input: `{ tool }`. Returns full `inputSchema`, plugin metadata, tool aliases, and UIA parameter aliases for any canonical tool name or alias (e.g. `find.AutomationId`, `SelectionItemPattern.Select`).
+
+### `execute_tool` (Implemented)
+
+Input: `{ tool, arguments?, dryRun? }`. Validates and dispatches any WinGuiMcp tool by canonical name or UIA pattern/property alias, automatically normalizing parameter aliases (`hwnd` → `handle`, `elementRef` → `ref`, `AutomationId` → `automationId`). Pass `--compact-tools` or `MCP_TOOL_SEARCH_MODE=compact` at startup to expose only `search_tools`, `describe_tool`, and `execute_tool` in `tools/list`.
 
 ---
 
@@ -675,3 +708,7 @@ list_windows → focus_window → snapshot → find_element / traverse tree
 Example (Notepad save): `type_text` → `hotkey { keys: "ctrl+s" }` → `wait_for` dialog → `click` Save.
 
 Re-snapshot after navigation or when receiving `ElementNotFound` with `stale: true`.
+
+## UIA execution boundary
+
+MCP tool calls serialize desktop operations on one dedicated background MTA worker. UIA automation is initialized lazily on first use. OS-only file waits use asynchronous polling; UI waits release the worker between polls. Each queued/provider operation has a 15-second deadline. A queued timeout or cancellation prevents that operation from starting. Cancellation does not revoke an already running native call. A running timeout reports `Timeout` with `outcomeUnknown: true` and quarantines the worker: inspect application state and restart the server before retrying. The server does not claim to terminate a blocked COM provider.

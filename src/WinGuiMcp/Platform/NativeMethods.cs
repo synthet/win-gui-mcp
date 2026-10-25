@@ -158,6 +158,29 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll", SetLastError = true)]
     public static partial uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool PrintWindow(IntPtr hWnd, IntPtr hdcBlt, uint nFlags);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool PostMessageW(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    [LibraryImport("user32.dll")]
+    public static partial IntPtr GetLastActivePopup(IntPtr hWnd);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool IsWindowEnabled(IntPtr hWnd);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool IsZoomed(IntPtr hWnd);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, [MarshalAs(UnmanagedType.Bool)] bool bRepaint);
+
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT
     {
@@ -229,6 +252,13 @@ internal static partial class NativeMethods
     public const int SM_CYSCREEN = 1;
     public const int SW_RESTORE = 9;
     public const int SW_SHOW = 5;
+    public const int SW_MINIMIZE = 6;
+    public const int SW_MAXIMIZE = 3;
+    public const uint WM_CLOSE = 0x0010;
+    public const uint PW_RENDERFULLCONTENT = 0x00000002;
+    public const uint MOUSEEVENTF_WHEEL = 0x0800;
+    public const uint MOUSEEVENTF_HWHEEL = 0x01000;
+    public const int WHEEL_DELTA = 120;
     public const byte VK_MENU = 0x12;
 
     public const uint DESKTOP_READOBJECTS = 0x0001;

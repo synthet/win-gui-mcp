@@ -4,6 +4,10 @@ namespace WinGuiMcp.Perception;
 
 public sealed class UemNode
 {
+    [JsonPropertyName("patternValues")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, object?>? PatternValues { get; init; }
+
     [JsonPropertyName("ref")]
     public required string Ref { get; init; }
 
@@ -47,6 +51,7 @@ public sealed class UemNode
 
     public UemNode CloneWithoutChildren() => new()
     {
+        PatternValues = PatternValues is null ? null : new(PatternValues),
         Ref = Ref,
         Source = Source,
         Role = Role,
@@ -62,6 +67,10 @@ public sealed class UemNode
 
 public sealed class GetPropertiesEnvelope
 {
+    [JsonPropertyName("patternValues")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, object?>? PatternValues { get; init; }
+
     [JsonPropertyName("ok")]
     public bool Ok { get; init; } = true;
 
@@ -104,6 +113,7 @@ public sealed class GetPropertiesEnvelope
 
     public static GetPropertiesEnvelope From(UemNode node) => new()
     {
+        PatternValues = node.PatternValues is null ? null : new(node.PatternValues),
         Ref = node.Ref,
         Source = node.Source,
         Role = node.Role,

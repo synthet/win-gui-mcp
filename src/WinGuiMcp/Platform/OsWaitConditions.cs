@@ -45,12 +45,42 @@ public static class OsWaitConditions
         if (!File.Exists(path))
             return false;
 
-        long size1 = new FileInfo(path).Length;
+        var first = new FileInfo(path);
+        long size1 = first.Length;
+        if (size1 == 0) return false;
+        var modified = first.LastWriteTimeUtc;
         Thread.Sleep(Math.Clamp(settleMs, 50, 2000));
         if (!File.Exists(path))
             return false;
 
-        long size2 = new FileInfo(path).Length;
-        return size1 == size2;
+        var second = new FileInfo(path);
+        return size1 == second.Length && modified == second.LastWriteTimeUtc;
+    }
+}
+
+/// <summary>Per-wait observation state; no sleeps, desktop calls, or image-format assumptions.</summary>
+public sealed class FileReadiness(TimeProvider? timeProvider = null)
+{
+    private readonly TimeProvider _time = timeProvider ?? TimeProvider.System;
+    private (long Length, DateTime Modified)? _last;
+    private long _stableSince;
+
+    public bool Observe(string path, int settleMs = 200, long minBytes = 1, DateTimeOffset? changedSinceUtc = null)
+    {
+        if (settleMs < 0 || settleMs > 60000 || minBytes < 0)
+            throw new ArgumentOutOfRangeException(nameof(settleMs), "Quiet duration must be 0..60000 ms and minBytes nonnegative.");
+        var file = new FileInfo(Environment.ExpandEnvironmentVariables(path));
+        if (!file.Exists || file.Length < minBytes || (changedSinceUtc.HasValue && file.LastWriteTimeUtc <= changedSinceUtc.Value.UtcDateTime))
+        {
+            _last = null;
+            return false;
+        }
+        var current = (file.Length, file.LastWriteTimeUtc);
+        if (_last != current)
+        {
+            _last = current;
+            _stableSince = _time.GetTimestamp();
+        }
+        return _time.GetElapsedTime(_stableSince).TotalMilliseconds >= settleMs;
     }
 }

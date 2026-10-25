@@ -31,9 +31,9 @@ public sealed class UiaSnapshotBuilder : IDisposable
         ControlType.Document
     ];
 
-    private readonly UIA3Automation _automation = new();
+    private readonly Lazy<UIA3Automation> _automation = new(() => new UIA3Automation());
 
-    public UIA3Automation Automation => _automation;
+    public UIA3Automation Automation => _automation.Value;
 
     public CacheRequest CreateCacheRequest()
     {
@@ -43,24 +43,24 @@ public sealed class UiaSnapshotBuilder : IDisposable
             TreeScope = TreeScope.Element | TreeScope.Children
         };
 
-        cr.Add(_automation.PropertyLibrary.Element.BoundingRectangle);
-        cr.Add(_automation.PropertyLibrary.Element.Name);
-        cr.Add(_automation.PropertyLibrary.Element.AutomationId);
-        cr.Add(_automation.PropertyLibrary.Element.ControlType);
-        cr.Add(_automation.PropertyLibrary.Element.ClassName);
-        cr.Add(_automation.PropertyLibrary.Element.IsEnabled);
-        cr.Add(_automation.PropertyLibrary.Element.HasKeyboardFocus);
-        cr.Add(_automation.PropertyLibrary.Element.IsOffscreen);
+        cr.Add(Automation.PropertyLibrary.Element.BoundingRectangle);
+        cr.Add(Automation.PropertyLibrary.Element.Name);
+        cr.Add(Automation.PropertyLibrary.Element.AutomationId);
+        cr.Add(Automation.PropertyLibrary.Element.ControlType);
+        cr.Add(Automation.PropertyLibrary.Element.ClassName);
+        cr.Add(Automation.PropertyLibrary.Element.IsEnabled);
+        cr.Add(Automation.PropertyLibrary.Element.HasKeyboardFocus);
+        cr.Add(Automation.PropertyLibrary.Element.IsOffscreen);
 
-        cr.Add(_automation.PatternLibrary.InvokePattern);
-        cr.Add(_automation.PatternLibrary.ValuePattern);
-        cr.Add(_automation.PatternLibrary.TogglePattern);
-        cr.Add(_automation.PatternLibrary.SelectionPattern);
-        cr.Add(_automation.PatternLibrary.SelectionItemPattern);
-        cr.Add(_automation.PatternLibrary.ExpandCollapsePattern);
-        cr.Add(_automation.PatternLibrary.ScrollPattern);
-        cr.Add(_automation.PatternLibrary.RangeValuePattern);
-        cr.Add(_automation.PatternLibrary.TextPattern);
+        cr.Add(Automation.PatternLibrary.InvokePattern);
+        cr.Add(Automation.PatternLibrary.ValuePattern);
+        cr.Add(Automation.PatternLibrary.TogglePattern);
+        cr.Add(Automation.PatternLibrary.SelectionPattern);
+        cr.Add(Automation.PatternLibrary.SelectionItemPattern);
+        cr.Add(Automation.PatternLibrary.ExpandCollapsePattern);
+        cr.Add(Automation.PatternLibrary.ScrollPattern);
+        cr.Add(Automation.PatternLibrary.RangeValuePattern);
+        cr.Add(Automation.PatternLibrary.TextPattern);
 
         return cr;
     }
@@ -89,7 +89,7 @@ public sealed class UiaSnapshotBuilder : IDisposable
         {
             try
             {
-                root = _automation.FromHandle(handle);
+                root = Automation.FromHandle(handle);
             }
             catch (Exception ex)
             {
@@ -98,7 +98,7 @@ public sealed class UiaSnapshotBuilder : IDisposable
 
             if (scope == "focused-control")
             {
-                var focused = _automation.FocusedElement();
+                var focused = Automation.FocusedElement();
                 if (focused is not null)
                     root = focused;
             }
@@ -137,10 +137,9 @@ public sealed class UiaSnapshotBuilder : IDisposable
         SnapshotSession session)
     {
         elementIndex++;
-        var refValue = RefFormat.Format(windowIndex, elementIndex);
+        var refValue = session.AllocateElementRef(windowIndex);
         var patterns = GetSupportedPatterns(element);
-        var rect = element.BoundingRectangle;
-        var bbox = Bbox.FromRectangle(rect.Left, rect.Top, rect.Right, rect.Bottom);
+        var bbox = TryGetBbox(element);
 
         string? value = null;
         try
@@ -157,13 +156,24 @@ public sealed class UiaSnapshotBuilder : IDisposable
         var states = new List<string>();
         if (isOffscreen)
             states.Add("offscreen");
-        if (element.Properties.HasKeyboardFocus.TryGetValue(out var hasFocus) && hasFocus)
-            states.Add("focused");
+        try
+        {
+            if (element.Properties.HasKeyboardFocus.TryGetValue(out var hasFocus) && hasFocus)
+                states.Add("focused");
+        }
+        catch { }
 
         var children = new List<UemNode>();
         if (depth < maxDepth)
         {
-            foreach (var child in element.FindAllChildren())
+            AutomationElement[] rawChildren = [];
+            try
+            {
+                rawChildren = element.FindAllChildren();
+            }
+            catch { }
+
+            foreach (var child in rawChildren)
             {
                 try
                 {
@@ -234,7 +244,8 @@ public sealed class UiaSnapshotBuilder : IDisposable
             Name = NullIfEmpty(TryGetName(element)),
             AutomationId = NullIfEmpty(TryGetAutomationId(element)),
             ClassName = NullIfEmpty(TryGetClassName(element)),
-            Value = string.IsNullOrEmpty(value) ? null : value,
+            Value = IsProtected(element) ? null : string.IsNullOrEmpty(value) ? ReadRangeValue(element) : value,
+            PatternValues = ReadPatternValues(element),
             Enabled = includeEnabledWhenFalse ? false : null,
             States = states.Count > 0 ? states : null,
             Patterns = patterns.Count > 0 ? patterns : null,
@@ -242,6 +253,122 @@ public sealed class UiaSnapshotBuilder : IDisposable
         };
 
         return node;
+    }
+
+    public UemNode ReadProperties(RefEntry entry)
+    {
+        var element = entry.Element;
+        var states = new List<string>();
+        if (TryGetIsOffscreen(element)) states.Add("offscreen");
+        try
+        {
+            if (element.Properties.HasKeyboardFocus.TryGetValue(out var focused) && focused) states.Add("focused");
+        }
+        catch { }
+
+        string? value = null;
+        try
+        {
+            if (!IsProtected(element) && element.Patterns.Value.IsSupported)
+                value = element.Patterns.Value.Pattern.Value.Value;
+        }
+        catch { }
+
+        return CreateNode(entry.Ref, element, value, GetSupportedPatterns(element), states, [], !TryGetIsEnabled(element));
+    }
+
+    public UemNode RegisterElement(SnapshotSession session, nint handle, AutomationElement element)
+    {
+        var windowIndex = session.RegisterWindow(handle);
+        var snapshotId = session.GetCurrentSnapshotId(windowIndex) ?? session.SetSnapshotId(windowIndex, Guid.NewGuid());
+        var index = 0;
+        return WalkElement(element, windowIndex, ref index, snapshotId, handle, "control", true, 0, 0, session);
+    }
+
+    private static bool IsProtected(AutomationElement element)
+    {
+        try
+        {
+            return element.Properties.IsPassword.TryGetValue(out var protectedContent) && protectedContent;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public static double? SanitizeDouble(double val) => double.IsFinite(val) ? val : null;
+
+    private static Bbox TryGetBbox(AutomationElement element)
+    {
+        try
+        {
+            var rect = element.BoundingRectangle;
+            return Bbox.FromRectangle(rect.Left, rect.Top, rect.Right, rect.Bottom);
+        }
+        catch
+        {
+            return new Bbox(0, 0, 0, 0);
+        }
+    }
+
+    private static string? ReadRangeValue(AutomationElement element)
+    {
+        try
+        {
+            if (!element.Patterns.RangeValue.IsSupported) return null;
+            var val = element.Patterns.RangeValue.Pattern.Value.Value;
+            return double.IsFinite(val) ? val.ToString(System.Globalization.CultureInfo.InvariantCulture) : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static Dictionary<string, object?>? ReadPatternValues(AutomationElement element)
+    {
+        if (IsProtected(element)) return null;
+        var values = new Dictionary<string, object?>();
+        try
+        {
+            if (element.Patterns.RangeValue.IsSupported)
+            {
+                var range = element.Patterns.RangeValue.Pattern;
+                values["rangeValue"] = new
+                {
+                    value = SanitizeDouble(range.Value.Value),
+                    minimum = SanitizeDouble(range.Minimum.Value),
+                    maximum = SanitizeDouble(range.Maximum.Value),
+                    smallChange = SanitizeDouble(range.SmallChange.Value),
+                    readOnly = range.IsReadOnly.Value
+                };
+            }
+        }
+        catch { }
+
+        try
+        {
+            if (element.Patterns.Toggle.IsSupported)
+                values["toggle"] = element.Patterns.Toggle.Pattern.ToggleState.Value.ToString();
+        }
+        catch { }
+
+        try
+        {
+            if (element.Patterns.SelectionItem.IsSupported)
+                values["selected"] = element.Patterns.SelectionItem.Pattern.IsSelected.Value;
+        }
+        catch { }
+
+        try
+        {
+            if (element.Patterns.ExpandCollapse.IsSupported)
+                values["expandCollapse"] = element.Patterns.ExpandCollapse.Pattern.ExpandCollapseState.Value.ToString();
+        }
+        catch { }
+
+        return values.Count == 0 ? null : values;
     }
 
     private bool ShouldIncludeNode(AutomationElement element, string detail, bool includeOffscreen)
@@ -286,28 +413,37 @@ public sealed class UiaSnapshotBuilder : IDisposable
         return !HasInteractionPattern(element);
     }
 
-    private static bool HasInteractionPattern(AutomationElement element) =>
-        element.Patterns.Invoke.IsSupported ||
-        element.Patterns.Value.IsSupported ||
-        element.Patterns.Toggle.IsSupported ||
-        element.Patterns.Selection.IsSupported ||
-        element.Patterns.SelectionItem.IsSupported ||
-        element.Patterns.ExpandCollapse.IsSupported ||
-        element.Patterns.Scroll.IsSupported ||
-        element.Patterns.RangeValue.IsSupported;
+    private static bool HasInteractionPattern(AutomationElement element)
+    {
+        try
+        {
+            return element.Patterns.Invoke.IsSupported ||
+                   element.Patterns.Value.IsSupported ||
+                   element.Patterns.Toggle.IsSupported ||
+                   element.Patterns.Selection.IsSupported ||
+                   element.Patterns.SelectionItem.IsSupported ||
+                   element.Patterns.ExpandCollapse.IsSupported ||
+                   element.Patterns.Scroll.IsSupported ||
+                   element.Patterns.RangeValue.IsSupported;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     private static List<string> GetSupportedPatterns(AutomationElement element)
     {
         var patterns = new List<string>();
-        if (element.Patterns.Invoke.IsSupported) patterns.Add("Invoke");
-        if (element.Patterns.Value.IsSupported) patterns.Add("Value");
-        if (element.Patterns.Toggle.IsSupported) patterns.Add("Toggle");
-        if (element.Patterns.Selection.IsSupported) patterns.Add("Selection");
-        if (element.Patterns.SelectionItem.IsSupported) patterns.Add("SelectionItem");
-        if (element.Patterns.ExpandCollapse.IsSupported) patterns.Add("ExpandCollapse");
-        if (element.Patterns.Scroll.IsSupported) patterns.Add("Scroll");
-        if (element.Patterns.RangeValue.IsSupported) patterns.Add("RangeValue");
-        if (element.Patterns.Text.IsSupported) patterns.Add("Text");
+        try { if (element.Patterns.Invoke.IsSupported) patterns.Add("Invoke"); } catch { }
+        try { if (element.Patterns.Value.IsSupported) patterns.Add("Value"); } catch { }
+        try { if (element.Patterns.Toggle.IsSupported) patterns.Add("Toggle"); } catch { }
+        try { if (element.Patterns.Selection.IsSupported) patterns.Add("Selection"); } catch { }
+        try { if (element.Patterns.SelectionItem.IsSupported) patterns.Add("SelectionItem"); } catch { }
+        try { if (element.Patterns.ExpandCollapse.IsSupported) patterns.Add("ExpandCollapse"); } catch { }
+        try { if (element.Patterns.Scroll.IsSupported) patterns.Add("Scroll"); } catch { }
+        try { if (element.Patterns.RangeValue.IsSupported) patterns.Add("RangeValue"); } catch { }
+        try { if (element.Patterns.Text.IsSupported) patterns.Add("Text"); } catch { }
         return patterns;
     }
 
@@ -379,5 +515,5 @@ public sealed class UiaSnapshotBuilder : IDisposable
         }
     }
 
-    public void Dispose() => _automation.Dispose();
+    public void Dispose() { if (_automation.IsValueCreated) _automation.Value.Dispose(); }
 }

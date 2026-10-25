@@ -43,55 +43,110 @@ public sealed class WindowCapture
     {
         if (handle is > 0)
         {
-            if (!NativeMethods.IsWindow((nint)handle.Value))
+            var hwnd = (nint)handle.Value;
+            if (!NativeMethods.IsWindow(hwnd))
                 throw new ToolException(ErrorCodes.WindowGone, "Window handle is no longer valid.");
 
-            var wgcBitmap = GraphicsCaptureProvider.TryCaptureWindow((nint)handle.Value);
-            if (wgcBitmap is not null)
-                return wgcBitmap;
+            try
+            {
+                var wgcBitmap = GraphicsCaptureProvider.TryCaptureWindow(hwnd);
+                if (wgcBitmap is not null)
+                {
+                    if (!IsBlankBitmap(wgcBitmap))
+                        return wgcBitmap;
+                    wgcBitmap.Dispose();
+                }
+            }
+            catch
+            {
+                // Fall back to PrintWindow / Desktop BitBlt when WGC fails.
+            }
+
+            var printBitmap = TryPrintWindow(hwnd);
+            if (printBitmap is not null)
+            {
+                if (!IsBlankBitmap(printBitmap))
+                    return printBitmap;
+                printBitmap.Dispose();
+            }
+
+            return CaptureWindowFromDesktop(hwnd);
         }
 
-        return CaptureWithBitBlt(handle);
+        return CaptureFullDesktop();
     }
 
-    private static Bitmap CaptureWithBitBlt(nint? handle)
+    private static Bitmap? TryPrintWindow(nint hwnd)
     {
-        NativeMethods.RECT rect;
-        nint sourceHandle;
-        var srcX = 0;
-        var srcY = 0;
+        if (!NativeMethods.GetWindowRect(hwnd, out var rect))
+            return null;
 
-        if (handle is null or 0)
+        var width = rect.Width;
+        var height = rect.Height;
+        if (width <= 0 || height <= 0)
+            return null;
+
+        var hdcWindow = NativeMethods.GetDC(hwnd);
+        if (hdcWindow == 0)
+            return null;
+
+        var hdcMem = NativeMethods.CreateCompatibleDC(hdcWindow);
+        var hBitmap = NativeMethods.CreateCompatibleBitmap(hdcWindow, width, height);
+        var hOld = NativeMethods.SelectObject(hdcMem, hBitmap);
+
+        try
         {
-            var width = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN);
-            var height = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN);
-            rect = new NativeMethods.RECT { Left = 0, Top = 0, Right = width, Bottom = height };
-            sourceHandle = NativeMethods.GetDesktopWindow();
-            srcX = rect.Left;
-            srcY = rect.Top;
+            if (!NativeMethods.PrintWindow(hwnd, hdcMem, NativeMethods.PW_RENDERFULLCONTENT))
+                return null;
+
+            return Image.FromHbitmap(hBitmap);
         }
-        else
+        catch
         {
-            if (!NativeMethods.GetWindowRect((nint)handle.Value, out rect))
-                throw new ToolException(ErrorCodes.CaptureFailed, "Could not read window bounds.");
-
-            sourceHandle = (nint)handle.Value;
+            return null;
         }
+        finally
+        {
+            NativeMethods.SelectObject(hdcMem, hOld);
+            NativeMethods.DeleteObject(hBitmap);
+            NativeMethods.DeleteDC(hdcMem);
+            NativeMethods.ReleaseDC(hwnd, hdcWindow);
+        }
+    }
 
+    private static Bitmap CaptureWindowFromDesktop(nint hwnd)
+    {
+        if (!NativeMethods.GetWindowRect(hwnd, out var rect))
+            throw new ToolException(ErrorCodes.CaptureFailed, "Could not read window bounds.");
+
+        return CaptureDesktopRect(rect);
+    }
+
+    private static Bitmap CaptureFullDesktop()
+    {
+        var width = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN);
+        var height = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN);
+        var rect = new NativeMethods.RECT { Left = 0, Top = 0, Right = width, Bottom = height };
+        return CaptureDesktopRect(rect);
+    }
+
+    private static Bitmap CaptureDesktopRect(NativeMethods.RECT rect)
+    {
         var captureWidth = rect.Width;
         var captureHeight = rect.Height;
         if (captureWidth <= 0 || captureHeight <= 0)
             throw new ToolException(ErrorCodes.CaptureFailed, "Capture region has zero size.");
 
-        var hdcWindow = NativeMethods.GetDC(sourceHandle);
-        var hdcMem = NativeMethods.CreateCompatibleDC(hdcWindow);
-        var hBitmap = NativeMethods.CreateCompatibleBitmap(hdcWindow, captureWidth, captureHeight);
+        var desktopHandle = NativeMethods.GetDesktopWindow();
+        var hdcDesktop = NativeMethods.GetDC(desktopHandle);
+        var hdcMem = NativeMethods.CreateCompatibleDC(hdcDesktop);
+        var hBitmap = NativeMethods.CreateCompatibleBitmap(hdcDesktop, captureWidth, captureHeight);
         var hOld = NativeMethods.SelectObject(hdcMem, hBitmap);
 
         try
         {
-            if (!NativeMethods.BitBlt(hdcMem, 0, 0, captureWidth, captureHeight, hdcWindow, srcX, srcY, NativeMethods.SRCCOPY))
-                throw new ToolException(ErrorCodes.CaptureFailed, "BitBlt capture failed.");
+            if (!NativeMethods.BitBlt(hdcMem, 0, 0, captureWidth, captureHeight, hdcDesktop, rect.Left, rect.Top, NativeMethods.SRCCOPY))
+                throw new ToolException(ErrorCodes.CaptureFailed, "BitBlt desktop capture failed.");
 
             return Image.FromHbitmap(hBitmap);
         }
@@ -100,8 +155,29 @@ public sealed class WindowCapture
             NativeMethods.SelectObject(hdcMem, hOld);
             NativeMethods.DeleteObject(hBitmap);
             NativeMethods.DeleteDC(hdcMem);
-            NativeMethods.ReleaseDC(sourceHandle, hdcWindow);
+            NativeMethods.ReleaseDC(desktopHandle, hdcDesktop);
         }
+    }
+
+    public static bool IsBlankBitmap(Bitmap bitmap)
+    {
+        if (bitmap.Width <= 0 || bitmap.Height <= 0)
+            return true;
+
+        var stepX = Math.Max(1, bitmap.Width / 16);
+        var stepY = Math.Max(1, bitmap.Height / 16);
+
+        for (var y = stepY / 2; y < bitmap.Height; y += stepY)
+        {
+            for (var x = stepX / 2; x < bitmap.Width; x += stepX)
+            {
+                var pixel = bitmap.GetPixel(x, y);
+                if (pixel.R != 0 || pixel.G != 0 || pixel.B != 0)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private static Bitmap ApplyRegion(Bitmap source, CaptureRegion? region)

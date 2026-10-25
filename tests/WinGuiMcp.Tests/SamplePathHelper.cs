@@ -7,8 +7,8 @@ internal static class SamplePathHelper
         var repoRoot = FindRepoRoot();
         var candidates = new[]
         {
-            Path.Combine(repoRoot, "samples", sampleFolder, "bin", "Debug", "net9.0-windows", exeName),
-            Path.Combine(repoRoot, "samples", sampleFolder, "bin", "Release", "net9.0-windows", exeName)
+            Path.Combine(repoRoot, "samples", sampleFolder, "bin", "Debug", "net10.0-windows", exeName),
+            Path.Combine(repoRoot, "samples", sampleFolder, "bin", "Release", "net10.0-windows", exeName)
         };
 
         foreach (var path in candidates)

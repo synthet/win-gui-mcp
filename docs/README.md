@@ -31,8 +31,8 @@ Read [errors.md](errors.md) and [security.md](security.md) alongside `tools.md` 
 | [security.md](security.md) | UIPI, elevation, deployment warnings |
 | [requirements/README.md](requirements/README.md) | Technical requirements index (traceability; does not override schemas) |
 | [guides/README.md](guides/README.md) | Generic desktop automation patterns and sibling MCP integration |
-| [dxo-photolab/README.md](dxo-photolab/README.md) | Redirect to canonical PhotoLab docs in `D:\Projects\dxo\docs\photolab-automation\` |
-| [cross-project/DXO_BOUNDARIES_CONSTITUTION.md](cross-project/DXO_BOUNDARIES_CONSTITUTION.md) | Normative boundaries vs sibling repo `D:\Projects\dxo` |
+| [dxo-photolab/README.md](dxo-photolab/README.md) | Redirect to canonical PhotoLab docs in `D:\Projects\dxo-photolab-mcp\docs\photolab-automation\` |
+| [cross-project/DXO_BOUNDARIES_CONSTITUTION.md](cross-project/DXO_BOUNDARIES_CONSTITUTION.md) | Normative boundaries vs sibling `dxo-photolab-mcp` |
 | [cross-project/LINKS.json](cross-project/LINKS.json) | Machine-readable cross-repo paths and MCP server keys |
 
 ## Research (background only)

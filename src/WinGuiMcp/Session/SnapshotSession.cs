@@ -22,6 +22,10 @@ public sealed class SnapshotSession
     private readonly Dictionary<int, nint> _windowRegistry = new();
     private readonly Dictionary<nint, int> _handleToIndex = new();
     private int _nextWindowIndex = 1;
+    private int _nextElementIndex;
+
+    public string AllocateElementRef(int windowIndex) =>
+        Common.RefFormat.Format(windowIndex, checked(++_nextElementIndex));
 
     public void TouchActivity() => LastActivity = _clock.UtcNow;
 
@@ -36,7 +40,6 @@ public sealed class SnapshotSession
         _snapshotsByWindow.Clear();
         _windowRegistry.Clear();
         _handleToIndex.Clear();
-        _nextWindowIndex = 1;
         RefTable.Clear();
         LastActivity = _clock.UtcNow;
     }

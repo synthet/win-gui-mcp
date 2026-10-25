@@ -9,7 +9,7 @@ Start at **[docs/README.md](docs/README.md)** for reading order and the full doc
 | Document | Purpose |
 |----------|---------|
 | [SPEC.md](docs/SPEC.md) | Executive summary — principles, stack, phases |
-| [stack.md](docs/stack.md) | C# / .NET 9, NuGet baseline, alternatives considered |
+| [stack.md](docs/stack.md) | C# / .NET 10 LTS, NuGet baseline, alternatives considered |
 | [architecture.md](docs/architecture.md) | System layers, session model, data flows |
 | [data-model.md](docs/data-model.md) | Unified Element Model (UEM) and ref format |
 | [tools.md](docs/tools.md) | Normative MCP tool definitions and JSON schemas |
@@ -38,7 +38,7 @@ This project is currently in the **Phase 1: MVP** development stage.
 
 ### Prerequisites
 
-- .NET 9.0 SDK
+- .NET 10 LTS.0 SDK
 - Windows OS (Windows 10/11 recommended)
 
 ### Build

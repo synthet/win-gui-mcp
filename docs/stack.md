@@ -2,22 +2,22 @@
 
 Normative stack decisions for WinGuiMcp. Module layout: [architecture.md](architecture.md). Phase scope: [phases.md](phases.md).
 
-**Summary:** Implement in **C# on .NET 9** with **FlaUI 5 (UIA3)**, the official **`ModelContextProtocol` SDK**, **`Microsoft.Extensions.Hosting`**, and **P/Invoke `SendInput`** as actuation fallback.
+**Summary:** Implement in **C# on .NET 10 LTS** with **FlaUI 5 (UIA3)**, the official **`ModelContextProtocol` SDK**, **`Microsoft.Extensions.Hosting`**, and **P/Invoke `SendInput`** as actuation fallback.
 
 ## Language and runtime
 
 | Decision | Choice |
 |----------|--------|
 | Language | **C#** |
-| Runtime | **.NET 9** |
+| Runtime | **.NET 10 LTS** |
 | Host model | Console exe, `Microsoft.Extensions.Hosting` for DI and lifecycle |
 | Deployment | `dotnet run` (dev); self-contained publish (Phase 4+) |
 
-### Why C# / .NET 9
+### Why C# / .NET 10 LTS
 
 Microsoft UI Automation (UIA) is a COM API. .NET provides first-class, strongly typed bindings via `System.Windows.Automation` and the actively maintained [FlaUI](https://github.com/FlaUIO/FlaUI) wrapper. The landscape survey in [research/deep-research-report.md](research/deep-research-report.md) and the design notes in [research/design-research.md](research/design-research.md) both conclude that accessibility-first Windows automation maturity clusters around UIA wrappers—not around MCP-native or vision-first tools.
 
-| Criterion | C# / .NET 9 | Primary alternatives |
+| Criterion | C# / .NET 10 LTS | Primary alternatives |
 |-----------|-------------|----------------------|
 | UIA / COM access | Native bindings + FlaUI 5 | Python (comtypes, pywinauto): viable but COM marshalling and GIL overhead on large tree walks |
 | Mature UIA wrapper | FlaUI — UIA3 primary, UIA2 fallback | No equivalent in Node; pywinauto mature in Python |
@@ -47,7 +47,7 @@ Microsoft UI Automation (UIA) is a COM API. .NET provides first-class, strongly 
 
 | Layer | Technology | Phase | Notes |
 |-------|------------|-------|-------|
-| Language / runtime | C# / .NET 9 | 1 | `net9.0` target |
+| Language / runtime | C# / .NET 10 LTS | 1 | `net9.0` target |
 | DI / lifecycle | `Microsoft.Extensions.Hosting` | 1 | Tool handlers, session, platform services |
 | MCP transport | `ModelContextProtocol` SDK, stdio JSON-RPC 2.0 | 1 | HTTP/SSE + auth in Phase 4 |
 | UIA perception | FlaUI 5 — **UIA3 primary**, UIA2 fallback | 1 | UIA2 for legacy WinForms only |
