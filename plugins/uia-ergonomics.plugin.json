@@ -1,0 +1,18 @@
+{
+  "id": "uia-ergonomics",
+  "name": "Generic UIA Pattern & Dialog Ergonomics Plugin",
+  "category": "ergonomics",
+  "description": "Sample declarative plugin registering ergonomic UIA control-pattern aliases for generic Windows desktop automation.",
+  "toolAliases": {
+    "Button.Click": "click",
+    "CheckBox.Toggle": "toggle",
+    "RadioButton.Select": "select",
+    "ListItem.Select": "select",
+    "TabItem.Select": "select",
+    "ComboBox.Expand": "expand",
+    "ComboBox.Collapse": "collapse",
+    "Slider.SetValue": "set_value",
+    "Edit.TypeText": "type_text",
+    "Window.GetModal": "get_active_modal"
+  }
+}

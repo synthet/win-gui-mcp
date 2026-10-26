@@ -192,6 +192,8 @@ public static class ToolCatalogRegistry
             dirs.Add(envDir);
 
         dirs.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins"));
+        dirs.Add(Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\plugins")));
+        dirs.Add(Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\..\plugins")));
 
         foreach (var dir in dirs.Distinct(StringComparer.OrdinalIgnoreCase))
         {
