@@ -9,6 +9,7 @@ on:
 jobs:
   build-and-test:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -23,4 +24,4 @@ jobs:
           dotnet build samples/WinGuiMcp.WpfSample/WinGuiMcp.WpfSample.csproj
 
       - name: Build and test
-        run: dotnet test WinGuiMcp.sln
+        run: dotnet test WinGuiMcp.sln --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --logger "console;verbosity=normal"
