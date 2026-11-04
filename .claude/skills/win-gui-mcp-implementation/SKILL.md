@@ -52,4 +52,4 @@ description: Scaffold and implement WinGuiMcp Phase 1 modules per docs/architect
 ## Related
 
 - Command: `/bootstrap-phase1`, `/implement`, `/implement-tool`
-- Skill: `win-gui-mcp-tools`, `mcp-server-design`
+- Skill: `win-gui-mcp-tools`, `win-gui-mcp-server-design`

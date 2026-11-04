@@ -51,4 +51,4 @@ Utility: `screenshot`, `wait_for`
 ## Related
 
 - Command: `/implement-tool`, `/phase-gate`
-- Skill: `win-gui-mcp-implementation`, `mcp-server-design`
+- Skill: `win-gui-mcp-implementation`, `win-gui-mcp-server-design`

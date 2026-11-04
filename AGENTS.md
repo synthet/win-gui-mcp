@@ -78,7 +78,7 @@ Type `/` in Cursor chat:
 |-------|---------|
 | `win-gui-mcp-tools` | MCP tool work, `/implement-tool` |
 | `win-gui-mcp-implementation` | `/bootstrap-phase1`, `/implement` |
-| `mcp-server-design` | `/mcp-tool-review`, MCP server changes |
+| `win-gui-mcp-server-design` | `/mcp-tool-review`, MCP server changes |
 | `security-review` | Security-sensitive changes |
 | `commit-conventions` | `/pr-ready`, commit/PR messaging |
 
@@ -138,12 +138,12 @@ Server key: **`win-gui-mcp`** (stdio via `dotnet run`).
 ## Shared agent setup
 
 Project-specific instructions in this file and nested instruction files govern this workspace.
-Reusable skills are authored in `.claude/skills/`; other harness trees are generated.
+Project skills are authored in `.claude/skills/`; other harness trees are generated.
 Run installed helpers relative to their skill directory; run project checks from this workspace.
 Preserve user edits, credentials, model settings, permissions and unrelated configuration.
 Project build/test/lint commands were not detected; consult project documentation before executing checks.
 
-Installed library: 45 applicable skills. Synchronize explicitly; startup hooks never install updates.
+Shared skills are installed at user level. This repository's skill trees hold project-owned skills and opted-in stack packs only. Synchronize explicitly; startup hooks never install updates.
 <!-- END FRAMEWORK SETUP -->
 
 <!-- FRAMEWORK RULE REFERENCES -->
