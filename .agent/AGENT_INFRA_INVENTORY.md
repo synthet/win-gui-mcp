@@ -35,7 +35,7 @@ Source of truth for paths: [AGENTS.md](../AGENTS.md). Canonical specs: [docs/CAN
 |-------|------|
 | `win-gui-mcp-tools` | `win-gui-mcp-tools/SKILL.md` |
 | `win-gui-mcp-implementation` | `win-gui-mcp-implementation/SKILL.md` |
-| `mcp-server-design` | `mcp-server-design/SKILL.md` |
+| `win-gui-mcp-server-design` | `win-gui-mcp-server-design/SKILL.md` |
 | `security-review` | `security-review/SKILL.md` |
 | `commit-conventions` | `commit-conventions/SKILL.md` |
 

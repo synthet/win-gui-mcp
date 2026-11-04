@@ -9,7 +9,7 @@ Review MCP server changes for capability boundaries, JSON schemas, security surf
 ## Context to read
 
 - `.cursor/rules/20-security-and-safety.mdc`
-- `.cursor/skills/mcp-server-design/SKILL.md`
+- `.cursor/skills/win-gui-mcp-server-design/SKILL.md`
 - [docs/tools.md](../../docs/tools.md), [docs/errors.md](../../docs/errors.md), [docs/security.md](../../docs/security.md)
 - `src/WinGuiMcp/Transport/`, `src/WinGuiMcp/Tools/`
 
@@ -35,5 +35,5 @@ Table: Tool | Spec match | Security | Error handling | Issues
 
 ## Related
 
-- Skill: `mcp-server-design`, `security-review`
+- Skill: `win-gui-mcp-server-design`, `security-review`
 - Docs: [docs/CANONICAL_SOURCES.md](../../docs/CANONICAL_SOURCES.md)
