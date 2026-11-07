@@ -48,6 +48,13 @@ Successful calls may include warnings (not failures):
 | `LaunchFailed` | recoverable | `launch_app` could not start process | Verify path/AUMID and permissions |
 | `ConfirmationRequired` | hard | Phase 4: destructive action blocked pending user ack | User confirms via client; retry with `confirmationId` |
 | `InternalError` | hard | Unexpected server exception | Log and retry once; report if persistent |
+| `ScenarioInvalid` | client | Scenario file, params or expression malformed; unknown param | Fix the file or params; `validate_scenario` lists every problem |
+| `StepNotFound` | client | A step names a tool or `ns.step` no provider serves | Check `list_scenarios` / tools.md names |
+| `AssertionFailed` | recoverable | An `assert`, `expect` or `fail` step was false | Inspect the receipt; adjust the app state or the scenario |
+| `WritesNotAllowed` | client | A non-read-only step ran without `allowWrites` | Review the scenario, then rerun with `allowWrites: true` |
+| `TargetNotAllowed` | hard | An actuating step hit a window outside `target.processes`, a restricted system app, or a stale handle; or the scenario declares no `target` | Fix `target` or the step; never widen it to system apps |
+| `GuardFailed` | recoverable | A step's `guard:` foreground check failed; nothing was sent | Wait, refocus, or re-capture; then resume or rerun |
+| `ResumeTokenInvalid` | client | Unknown, used, expired or forged token; scenario changed; secret param missing | Start a new run |
 
 ### Severity
 

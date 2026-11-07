@@ -57,6 +57,10 @@ Coding agents, gate runners, and `/phase-gate` **must not** launch, focus, snaps
 
 Operators may run restricted flows **manually** on a VM; agents do not. If a task requires Settings or Control Panel, stop and ask the user to perform it by hand.
 
+### Enforcement in scenarios
+
+The scenario runner enforces this list in code (`TargetGuard.DeniedProcesses`, plus `ms-settings:` launches). Any actuating scenario step that resolves to one of these processes is refused with `TargetNotAllowed`, whatever the scenario's `target` says. Direct tool calls still rely on this policy.
+
 ## MCP surface
 
 - No arbitrary shell, file, or network escape hatches beyond [docs/tools.md](../docs/tools.md).

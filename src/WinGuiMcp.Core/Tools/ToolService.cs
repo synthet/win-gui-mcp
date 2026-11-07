@@ -500,6 +500,7 @@ public sealed class ToolService
         {
             "window-active" when NativeMethods.GetForegroundWindow() == (nint)handle => ("active", "Window", "active"),
             "window-closed" when !NativeMethods.IsWindow(handle) => ("closed", "Window", "closed"),
+            "window-active" or "window-closed" => null, // not yet: keep polling until timeout
             "element-exists" => FindForWait(handle, target, requireEnabled: false, requireVisible: false),
             "element-enabled" => FindForWait(handle, target, requireEnabled: true, requireVisible: false),
             "text-visible" => FindForWait(handle, target, requireEnabled: false, requireVisible: true),

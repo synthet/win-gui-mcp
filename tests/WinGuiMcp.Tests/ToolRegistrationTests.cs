@@ -20,18 +20,5 @@ public static class TestServiceFactory
             new WindowCapture());
 }
 
-public class ToolRegistrationTests
-{
-    [Fact]
-    public void Phase1Tools_HasExpectedNames()
-    {
-        var expected = new[]
-        {
-            "list_windows", "launch_app", "focus_window", "snapshot", "find_element",
-            "get_properties", "click", "type_text", "set_value", "hotkey", "screenshot", "wait_for"
-        };
-
-        Assert.Equal(12, expected.Length);
-        Assert.All(expected, name => Assert.False(string.IsNullOrWhiteSpace(name)));
-    }
-}
+// The tool-name check that lived here only asserted a local array; ToolSurfaceSnapshotTests
+// now locks the real [McpServerTool] surface and catalog schemas against golden/tool-surface.json.

@@ -681,7 +681,27 @@ Input: `{ tool }`. Returns full `inputSchema`, plugin metadata, tool aliases, an
 
 ### `execute_tool` (Implemented)
 
-Input: `{ tool, arguments?, dryRun? }`. Validates and dispatches any WinGuiMcp tool by canonical name or UIA pattern/property alias, automatically normalizing parameter aliases (`hwnd` → `handle`, `elementRef` → `ref`, `AutomationId` → `automationId`). Pass `--compact-tools` or `MCP_TOOL_SEARCH_MODE=compact` at startup to expose only `search_tools`, `describe_tool`, and `execute_tool` in `tools/list`.
+Input: `{ tool, arguments?, dryRun? }`. Validates and dispatches any WinGuiMcp tool by canonical name or UIA pattern/property alias, automatically normalizing parameter aliases (`hwnd` → `handle`, `elementRef` → `ref`, `AutomationId` → `automationId`). Pass `--compact-tools` or `MCP_TOOL_SEARCH_MODE=compact` at startup to expose only `search_tools`, `describe_tool`, and `execute_tool` in `tools/list`, plus the four [scenario tools](#scenarios), which are MCP-only and not reachable through `execute_tool`.
+
+## Scenarios
+
+Declarative step files run as one call. Language reference: [scenarios.md](scenarios.md). Design: [ADR-0001](adr/0001-core-library-and-scenarios.md). The same engine runs from the CLI: `WinGuiMcp scenario run|resume|validate|list`.
+
+### `run_scenario` (Implemented)
+
+Input: `{ scenario, params?, dryRun?, allowWrites? }`. `scenario` is a path, or a name under the scenario roots (`./scenarios`, `<exe>/scenarios`). Returns `{ ok, status, exitCode, runId, stepsRun, stepsTotal, resumeToken?, checkpoint?, error?, receipt, vars }`. `status` is `passed`, `failed`, `blocked`, `paused` or `invalid` (exit codes 0, 1, 2, 3, 4). Non-read-only steps need `allowWrites: true`. `dryRun` never actuates. Cannot be called from inside a scenario step.
+
+### `resume_scenario` (Implemented)
+
+Input: `{ resumeToken, approve?, secretParams? }`. Continues a paused run after its checkpoint (`approve: true`, the default) or stops it (`approve: false`, status `aborted`). Tokens are single-use, expire after 12 hours, and are refused if the scenario file changed. Secret params must be passed again.
+
+### `validate_scenario` (Implemented)
+
+Input: `{ scenario, params? }`. Checks structure, params and that every step exists, without touching the desktop. Returns `{ ok, scenario, path, steps, writes, problems[] }`.
+
+### `list_scenarios` (Implemented)
+
+Input: `{}`. Lists scenario files under the scenario roots with name, description, step count, writes and params.
 
 ---
 

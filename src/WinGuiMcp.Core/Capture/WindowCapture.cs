@@ -39,6 +39,43 @@ public sealed class WindowCapture
         }
     }
 
+    /// <summary>
+    /// Captures like <see cref="Capture"/> but writes a PNG to <paramref name="outputPath"/> instead of
+    /// returning base64 (large captures overflow MCP tool results). Returns path, size and SHA-256.
+    /// </summary>
+    public CaptureFileResult CaptureToFile(nint? handle, CaptureRegion? region, double scale, string outputPath)
+    {
+        if (string.IsNullOrWhiteSpace(outputPath))
+            throw new ToolException(ErrorCodes.InvalidArgument, "outputPath is required.");
+        try
+        {
+            if (handle is 0)
+                throw new ToolException(ErrorCodes.InvalidArgument, "handle must be a non-zero HWND integer.");
+
+            using var bitmap = CaptureBitmap(handle);
+            using var cropped = ApplyRegion(bitmap, region);
+            using var scaled = ApplyScale(cropped, scale, out var finalWidth, out var finalHeight);
+
+            var full = Path.GetFullPath(outputPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+            using (var ms = new MemoryStream())
+            {
+                scaled.Save(ms, ImageFormat.Png);
+                File.WriteAllBytes(full, ms.ToArray());
+                var sha = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(ms.ToArray())).ToLowerInvariant();
+                return new CaptureFileResult { Path = full, Width = finalWidth, Height = finalHeight, Sha256 = sha };
+            }
+        }
+        catch (ToolException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new ToolException(ErrorCodes.CaptureFailed, $"Screenshot capture failed: {ex.Message}");
+        }
+    }
+
     private static Bitmap CaptureBitmap(nint? handle)
     {
         if (handle is > 0)
@@ -228,4 +265,12 @@ public sealed class CaptureResult
     public required string MimeType { get; init; }
     public required int Width { get; init; }
     public required int Height { get; init; }
+}
+
+public sealed class CaptureFileResult
+{
+    public required string Path { get; init; }
+    public required int Width { get; init; }
+    public required int Height { get; init; }
+    public required string Sha256 { get; init; }
 }

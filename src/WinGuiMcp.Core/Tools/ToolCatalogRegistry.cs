@@ -160,6 +160,9 @@ public static class ToolCatalogRegistry
     };
 
     private static readonly IReadOnlyList<WinGuiToolDescriptor> ToolDescriptors = BuildToolDescriptors();
+
+    /// <summary>Canonical names of every catalog tool (used by the scenario step provider).</summary>
+    public static IReadOnlyList<string> ToolNames => ToolDescriptors.Select(d => d.Name).ToArray();
     private static readonly List<WinGuiPluginDescriptor> ExternalPlugins = [];
     private static bool _pluginsLoaded;
 
