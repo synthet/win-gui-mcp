@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/synthet/win-gui-mcp/schemas/scenario.schema.json",
+  "title": "WinGuiMcp scenario",
+  "description": "Declarative step file for run_scenario / `WinGuiMcp scenario run`. See docs/scenarios.md. The runtime validator in ScenarioLoader is authoritative; this schema is for editors and CI linting.",
+  "type": "object",
+  "required": ["scenario", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "scenario": { "type": "string", "minLength": 1 },
+    "version": { "type": "integer", "minimum": 1 },
+    "description": { "type": "string" },
+    "profile": { "type": "string", "description": "Reserved for application profiles (proposal S2)." },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "processes": { "type": "array", "items": { "type": "string" } },
+        "titlePattern": { "type": "string" }
+      }
+    },
+    "params": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": { "enum": ["string", "number", "integer", "boolean", "object", "array"] },
+              "required": { "type": "boolean" },
+              "default": {},
+              "secret": { "type": "boolean" },
+              "min": { "type": "number" },
+              "max": { "type": "number" },
+              "description": { "type": "string" }
+            }
+          },
+          { "not": { "type": "object" } }
+        ]
+      }
+    },
+    "writes": { "type": "array", "items": { "type": "string" } },
+    "on_error": {
+      "type": "object",
+      "properties": { "screenshot": { "type": "boolean" } }
+    },
+    "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "description": "Exactly one action key (a tool name, ns.step, or set/assert/wait_until/checkpoint/call/log/fail) plus modifiers.",
+      "minProperties": 1,
+      "properties": {
+        "id": { "type": "string" },
+        "save": { "type": "object", "additionalProperties": { "type": "string", "pattern": "^\\$" } },
+        "expect": { "oneOf": [{ "type": "string" }, { "type": "object", "properties": { "expression": { "type": "string" } } }] },
+        "retry": {
+          "type": "object",
+          "properties": {
+            "attempts": { "type": "integer", "minimum": 1 },
+            "backoffMs": { "oneOf": [{ "type": "integer" }, { "type": "array", "items": { "type": "integer" } }] }
+          }
+        },
+        "when": { "type": ["string", "boolean"] },
+        "guard": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "process": { "type": "string" },
+            "class": { "type": "string" },
+            "titleLike": { "type": "string" },
+            "handle": { "type": ["integer", "string"] },
+            "waitMs": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "note": { "type": "string" },
+        "timeoutMs": { "type": "integer" },
+        "continueOnError": { "type": "boolean" },
+        "checkpoint": { "oneOf": [{ "type": "string" }, { "type": "object", "required": ["message"] }] },
+        "wait_until": { "type": "object", "required": ["do", "until"] },
+        "call": { "type": "object", "required": ["scenario"] }
+      }
+    }
+  }
+}

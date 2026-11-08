@@ -1,0 +1,35 @@
+# Phase 1 Notepad gate flow as a scenario (docs/scenarios.md).
+#
+# Windows 11 Notepad restores previous tabs, so a bare `launch_app notepad.exe` can show one of your files.
+# This scenario opens a scratch file you name, and types only after the foreground guard confirms that
+# file's tab is the active window. Create the file first, e.g.:  echo.> %TEMP%\wingui-scenario.txt
+#
+#   WinGuiMcp scenario validate samples/scenarios/notepad-roundtrip.scenario.yaml --param file=C:\Temp\wingui-scenario.txt
+#   WinGuiMcp scenario run samples/scenarios/notepad-roundtrip.scenario.yaml --dry-run --param file=C:\Temp\wingui-scenario.txt
+#   WinGuiMcp scenario run samples/scenarios/notepad-roundtrip.scenario.yaml --allow-writes --param file=C:\Temp\wingui-scenario.txt
+scenario: notepad-roundtrip
+version: 1
+description: Open a scratch file in Notepad, type text, read it back, then close after a checkpoint (unsaved).
+target: { processes: [notepad.exe] }
+params:
+  file: { type: string, required: true, description: Existing scratch .txt file to open (its content may be replaced) }
+  fileTitle: { type: string, default: wingui-scenario, description: Text the Notepad title must contain before typing }
+  text: { type: string, default: "hello from a scenario", description: Text to type }
+on_error: { screenshot: true }
+steps:
+  - id: launch
+    launch_app: { path: notepad.exe, args: "\"${params.file}\"", waitForWindowMs: 10000 }
+    save: { hwnd: $.handle }
+  - wait_for: { handle: "${hwnd}", condition: window-active, timeoutMs: 10000 }
+  - snapshot: { handle: "${hwnd}", detail: control }
+  - find_element: { handle: "${hwnd}", by: role, value: Document }
+    save: { doc: $.ref }
+  - type_text: { ref: "${doc}", text: "${params.text}" }
+    guard: { process: notepad.exe, titleLike: "${params.fileTitle}", waitMs: 2000 }
+    retry: { attempts: 3, backoffMs: [200, 500] }
+  - get_text: { ref: "${doc}" }
+    save: { got: $.text }
+  - assert: { expression: "contains(got, params.text)", message: "Notepad shows '${got}'" }
+  - screenshot: { handle: "${hwnd}", outputPath: notepad.png }
+  - checkpoint: { message: "Notepad shows the text in ${params.file}. Look at notepad.png in the run folder. Close Notepad without saving?" }
+  - close_window: { handle: "${hwnd}" }

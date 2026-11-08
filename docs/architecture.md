@@ -239,7 +239,7 @@ Optional trajectory log: tool name, params (refs only, not bboxes), snapshotId, 
 ## Non-goals (all phases)
 
 - HostAgent / multi-agent orchestration (UFO-style)
-- Record-and-replay script export (WinWright-style)
+- Record-and-replay script export (WinWright-style). Declarative scenarios are in scope; see [scenarios.md](scenarios.md) and [ADR-0001](adr/0001-core-library-and-scenarios.md)
 - Remote desktop / cross-machine control
 - Linux or macOS support
 - Separate WebDriver/JSON-RPC controller service (MCP is the agent interface; no dual API in MVP)

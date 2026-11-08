@@ -1,0 +1,1722 @@
+{
+  "attributeTools": [
+    {
+      "type": "Phase1Tools",
+      "name": "click",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Clicks an element by ref or physical point.",
+      "parameters": [
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "x",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "y",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "button",
+          "type": "String",
+          "optional": true,
+          "default": "left"
+        },
+        {
+          "name": "clickCount",
+          "type": "Int32",
+          "optional": true,
+          "default": "1"
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "close_window",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Closes a window cleanly via WindowPattern.Close or WM_CLOSE.",
+      "parameters": [
+        {
+          "name": "handle",
+          "type": "Int32",
+          "optional": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "collapse",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Collapses a combo box, tree item, or expander via ExpandCollapsePattern.",
+      "parameters": [
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "describe_tool",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Returns full inputSchema, plugin metadata, tool aliases, and UIA parameter aliases for a selected tool.",
+      "parameters": [
+        {
+          "name": "tool",
+          "type": "String",
+          "optional": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "drag",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Drags from a source element or screen coordinates to a target element or screen coordinates.",
+      "parameters": [
+        {
+          "name": "sourceRef",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "startX",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "startY",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "targetRef",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "endX",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "endY",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "button",
+          "type": "String",
+          "optional": true,
+          "default": "left"
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "execute_tool",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Validates and dispatches any WinGuiMcp tool by canonical name or UIA pattern/property alias, normalizing argument aliases.",
+      "parameters": [
+        {
+          "name": "tool",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "arguments",
+          "type": "JsonObject",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "dryRun",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "expand",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Expands a combo box, tree item, or expander via ExpandCollapsePattern.",
+      "parameters": [
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "find_element",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Locates an element in the snapshot index for the given window.",
+      "parameters": [
+        {
+          "name": "handle",
+          "type": "Int32",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "by",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "value",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "nth",
+          "type": "Int32",
+          "optional": true,
+          "default": "0"
+        },
+        {
+          "name": "match",
+          "type": "String",
+          "optional": true,
+          "default": "contains"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "focus_window",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Brings a window to the foreground.",
+      "parameters": [
+        {
+          "name": "handle",
+          "type": "Int32",
+          "optional": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "get_active_modal",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Checks whether a window is disabled by or owns an active modal dialog popup.",
+      "parameters": [
+        {
+          "name": "handle",
+          "type": "Int32",
+          "optional": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "get_properties",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Returns full UEM record for a ref.",
+      "parameters": [
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "get_text",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Reads text from an element via TextPattern, ValuePattern, or Name.",
+      "parameters": [
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "hotkey",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Sends a key chord to the foreground window.",
+      "parameters": [
+        {
+          "name": "keys",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "handle",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "inspect_at",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Inspects the UIA element at the given screen coordinates.",
+      "parameters": [
+        {
+          "name": "x",
+          "type": "Int32",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "y",
+          "type": "Int32",
+          "optional": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "launch_app",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Starts an application by executable path or Application User Model ID.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "appUserModelId",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "args",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "waitForWindowMs",
+          "type": "Int32",
+          "optional": true,
+          "default": "10000"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "list_windows",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Returns top-level visible windows.",
+      "parameters": [
+        {
+          "name": "filter",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "includeMinimized",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "press_key",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Presses an individual key (e.g. Tab, Enter, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Delete, Backspace, F1-F12) one or more times.",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "handle",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "count",
+          "type": "Int32",
+          "optional": true,
+          "default": "1"
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "screenshot",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Captures a window or full screen (automatically falls back to PrintWindow / Desktop DC for GPU/DirectX windows).",
+      "parameters": [
+        {
+          "name": "handle",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "regionX",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "regionY",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "regionWidth",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "regionHeight",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "scale",
+          "type": "Double",
+          "optional": true,
+          "default": "1"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "scroll",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Scrolls an element via ScrollPattern or mouse wheel at the target coordinates.",
+      "parameters": [
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "x",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "y",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "direction",
+          "type": "String",
+          "optional": true,
+          "default": "down"
+        },
+        {
+          "name": "amount",
+          "type": "Int32",
+          "optional": true,
+          "default": "3"
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "search_tools",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Searches WinGuiMcp tools, plugins, and UIA pattern/property aliases using BM25 and keyword ranking.",
+      "parameters": [
+        {
+          "name": "query",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "readOnlyOnly",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "includeSchemas",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "limit",
+          "type": "Int32",
+          "optional": true,
+          "default": "10"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "select",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Selects a list item, tab item, or radio button via SelectionItemPattern.",
+      "parameters": [
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "set_value",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Sets control value directly via UIA ValuePattern or RangeValuePattern.",
+      "parameters": [
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "value",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "set_window_state",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Sets window state (minimize, maximize, restore, normal) and optionally moves/resizes the window.",
+      "parameters": [
+        {
+          "name": "handle",
+          "type": "Int32",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "state",
+          "type": "String",
+          "optional": true,
+          "default": "normal"
+        },
+        {
+          "name": "x",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "y",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "width",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "height",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "snapshot",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Returns a pruned UIA accessibility tree with stable refs.",
+      "parameters": [
+        {
+          "name": "handle",
+          "type": "Int32",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "scope",
+          "type": "String",
+          "optional": true,
+          "default": "window"
+        },
+        {
+          "name": "detail",
+          "type": "String",
+          "optional": true,
+          "default": "control"
+        },
+        {
+          "name": "includeOffscreen",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "useVision",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "rootRef",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "maxDepth",
+          "type": "Int32",
+          "optional": true,
+          "default": "32"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "toggle",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Toggles a check box or toggle button via TogglePattern.",
+      "parameters": [
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "type_text",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Types text into the focused control or a specific ref (auto-falls back to keyboard simulation if ValuePattern is read-only).",
+      "parameters": [
+        {
+          "name": "text",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "ref",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "clearFirst",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "submit",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "includeSnapshot",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "method",
+          "type": "String",
+          "optional": true,
+          "default": "auto"
+        }
+      ]
+    },
+    {
+      "type": "Phase1Tools",
+      "name": "wait_for",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Waits until a condition holds or timeout.",
+      "parameters": [
+        {
+          "name": "handle",
+          "type": "Int32",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "condition",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "target",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "timeoutMs",
+          "type": "Int32",
+          "optional": true,
+          "default": "5000"
+        },
+        {
+          "name": "settleMs",
+          "type": "Int32",
+          "optional": true,
+          "default": "200"
+        },
+        {
+          "name": "minBytes",
+          "type": "Int64",
+          "optional": true,
+          "default": "1"
+        },
+        {
+          "name": "changedSinceUtc",
+          "type": "String",
+          "optional": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "CompactDiscoveryTools",
+      "name": "describe_tool",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Returns full inputSchema, plugin metadata, tool aliases, and UIA parameter aliases for a selected tool.",
+      "parameters": [
+        {
+          "name": "tool",
+          "type": "String",
+          "optional": false,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "CompactDiscoveryTools",
+      "name": "execute_tool",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Validates and dispatches any WinGuiMcp tool by canonical name or UIA pattern/property alias, normalizing argument aliases.",
+      "parameters": [
+        {
+          "name": "tool",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "arguments",
+          "type": "JsonObject",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "dryRun",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "CompactDiscoveryTools",
+      "name": "search_tools",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Searches WinGuiMcp tools, plugins, and UIA pattern/property aliases using BM25 and keyword ranking.",
+      "parameters": [
+        {
+          "name": "query",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "readOnlyOnly",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "includeSchemas",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "limit",
+          "type": "Int32",
+          "optional": true,
+          "default": "10"
+        }
+      ]
+    },
+    {
+      "type": "ScenarioTools",
+      "name": "list_scenarios",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Lists scenario files under the scenario roots with their params and descriptions.",
+      "parameters": []
+    },
+    {
+      "type": "ScenarioTools",
+      "name": "resume_scenario",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Continues a run paused at a checkpoint (approve: true) or stops it (approve: false). Tokens are single-use; secret params must be passed again.",
+      "parameters": [
+        {
+          "name": "resumeToken",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "approve",
+          "type": "Boolean",
+          "optional": true,
+          "default": "True"
+        },
+        {
+          "name": "secretParams",
+          "type": "JsonObject",
+          "optional": true,
+          "default": null
+        }
+      ]
+    },
+    {
+      "type": "ScenarioTools",
+      "name": "run_scenario",
+      "readOnly": false,
+      "destructive": true,
+      "openWorld": false,
+      "structured": true,
+      "description": "Runs a declarative *.scenario.yaml/json step file (path or name under the scenario roots). Write steps need allowWrites; dryRun validates every step without acting. Stops at a checkpoint with a resumeToken.",
+      "parameters": [
+        {
+          "name": "scenario",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "params",
+          "type": "JsonObject",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "dryRun",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        },
+        {
+          "name": "allowWrites",
+          "type": "Boolean",
+          "optional": true,
+          "default": "False"
+        }
+      ]
+    },
+    {
+      "type": "ScenarioTools",
+      "name": "validate_scenario",
+      "readOnly": true,
+      "destructive": false,
+      "openWorld": false,
+      "structured": true,
+      "description": "Checks a scenario file: structure, params, and that every step exists. Does not touch the desktop.",
+      "parameters": [
+        {
+          "name": "scenario",
+          "type": "String",
+          "optional": false,
+          "default": null
+        },
+        {
+          "name": "params",
+          "type": "JsonObject",
+          "optional": true,
+          "default": null
+        }
+      ]
+    }
+  ],
+  "catalog": [
+    {
+      "name": "click",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Clicks an element by ref (InvokePattern/Point) or physical screen coordinates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          },
+          "button": {
+            "type": "string"
+          },
+          "clickCount": {
+            "type": "integer"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "close_window",
+      "plugin": "window",
+      "readOnly": false,
+      "description": "Closes a window cleanly via WindowPattern.Close or WM_CLOSE.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "handle"
+        ],
+        "properties": {
+          "handle": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "collapse",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Collapses a combo box, tree item, or expander via ExpandCollapsePattern.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "describe_tool",
+      "plugin": "discovery",
+      "readOnly": true,
+      "description": "Returns full inputSchema, plugin metadata, tool aliases, and UIA parameter aliases for a selected tool.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "tool"
+        ],
+        "properties": {
+          "tool": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "drag",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Drags from a source element or screen coordinates to a target element or screen coordinates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sourceRef": {
+            "type": "string"
+          },
+          "startX": {
+            "type": "integer"
+          },
+          "startY": {
+            "type": "integer"
+          },
+          "targetRef": {
+            "type": "string"
+          },
+          "endX": {
+            "type": "integer"
+          },
+          "endY": {
+            "type": "integer"
+          },
+          "button": {
+            "type": "string"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "execute_tool",
+      "plugin": "discovery",
+      "readOnly": false,
+      "description": "Validates and dispatches any WinGuiMcp tool by canonical name or UIA pattern/property alias, normalizing argument aliases.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "tool"
+        ],
+        "properties": {
+          "tool": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "object"
+          },
+          "dryRun": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "expand",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Expands a combo box, tree item, or expander via ExpandCollapsePattern.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "find_element",
+      "plugin": "perception",
+      "readOnly": true,
+      "description": "Locates an element in the snapshot index by AutomationId, Name, ControlType/role, ClassName, or text.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "handle",
+          "by",
+          "value"
+        ],
+        "properties": {
+          "handle": {
+            "type": "integer"
+          },
+          "by": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "nth": {
+            "type": "integer"
+          },
+          "match": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "focus_window",
+      "plugin": "window",
+      "readOnly": false,
+      "description": "Brings a window to the foreground.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "handle"
+        ],
+        "properties": {
+          "handle": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "get_active_modal",
+      "plugin": "window",
+      "readOnly": true,
+      "description": "Checks whether a window is disabled by or owns an active modal dialog popup.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "handle"
+        ],
+        "properties": {
+          "handle": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "get_properties",
+      "plugin": "perception",
+      "readOnly": true,
+      "description": "Returns full UEM record for a ref.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "get_text",
+      "plugin": "perception",
+      "readOnly": true,
+      "description": "Reads text from an element via TextPattern, ValuePattern, or Name.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "hotkey",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Sends a key chord to the foreground or specified window.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "keys"
+        ],
+        "properties": {
+          "keys": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "integer"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "inspect_at",
+      "plugin": "perception",
+      "readOnly": true,
+      "description": "Inspects the UIA element at the given screen coordinates.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "properties": {
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "launch_app",
+      "plugin": "window",
+      "readOnly": false,
+      "description": "Starts an application by executable path or Application User Model ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "appUserModelId": {
+            "type": "string"
+          },
+          "args": {
+            "type": "string"
+          },
+          "waitForWindowMs": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "list_windows",
+      "plugin": "window",
+      "readOnly": true,
+      "description": "Returns top-level visible windows.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string"
+          },
+          "includeMinimized": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "press_key",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Presses an individual key (e.g. Tab, Enter, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight) one or more times.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "screenshot",
+      "plugin": "capture",
+      "readOnly": true,
+      "description": "Captures a window or full screen (automatically falls back to PrintWindow / Desktop DC for GPU/DirectX windows).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "integer"
+          },
+          "regionX": {
+            "type": "integer"
+          },
+          "regionY": {
+            "type": "integer"
+          },
+          "regionWidth": {
+            "type": "integer"
+          },
+          "regionHeight": {
+            "type": "integer"
+          },
+          "scale": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "name": "scroll",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Scrolls an element via ScrollPattern or mouse wheel at the target coordinates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "search_tools",
+      "plugin": "discovery",
+      "readOnly": true,
+      "description": "Searches WinGuiMcp tools, plugins, and UIA pattern/property aliases using BM25 and keyword ranking.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "readOnlyOnly": {
+            "type": "boolean"
+          },
+          "includeSchemas": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "select",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Selects a list item, tab item, or radio button via SelectionItemPattern.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "set_value",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Sets control value directly via UIA ValuePattern or RangeValuePattern.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "ref",
+          "value"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "set_window_state",
+      "plugin": "window",
+      "readOnly": false,
+      "description": "Sets window state (minimize, maximize, restore, normal) and optionally moves/resizes the window.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "handle"
+        ],
+        "properties": {
+          "handle": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "snapshot",
+      "plugin": "perception",
+      "readOnly": true,
+      "description": "Returns a pruned UIA accessibility tree with stable refs.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "handle"
+        ],
+        "properties": {
+          "handle": {
+            "type": "integer"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "includeOffscreen": {
+            "type": "boolean"
+          },
+          "rootRef": {
+            "type": "string"
+          },
+          "maxDepth": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "toggle",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Toggles a check box or toggle button via TogglePattern.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "type_text",
+      "plugin": "action",
+      "readOnly": false,
+      "description": "Types text into the focused control or a specific ref (auto-falls back to keyboard simulation if ValuePattern is read-only).",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "clearFirst": {
+            "type": "boolean"
+          },
+          "submit": {
+            "type": "boolean"
+          },
+          "includeSnapshot": {
+            "type": "boolean"
+          },
+          "method": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "wait_for",
+      "plugin": "perception",
+      "readOnly": true,
+      "description": "Waits until a UI or file condition holds or timeout.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "handle",
+          "condition"
+        ],
+        "properties": {
+          "handle": {
+            "type": "integer"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "timeoutMs": {
+            "type": "integer"
+          },
+          "settleMs": {
+            "type": "integer"
+          },
+          "minBytes": {
+            "type": "integer"
+          },
+          "changedSinceUtc": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

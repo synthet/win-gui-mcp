@@ -264,12 +264,12 @@ public sealed class Phase1Tools
         }
         catch (ToolException ex)
         {
-            var fgHwnd = NativeMethods.GetForegroundWindow();
+            var (fgHwnd, fgTitle) = ForegroundInfo.Get();
             var details = ex.Error.Details ?? new Dictionary<string, object?>();
             if (!details.ContainsKey("foregroundHwnd"))
-                details["foregroundHwnd"] = (int)fgHwnd;
+                details["foregroundHwnd"] = fgHwnd;
             if (!details.ContainsKey("foregroundTitle"))
-                details["foregroundTitle"] = WindowEnumerator.GetWindowTitle(fgHwnd);
+                details["foregroundTitle"] = fgTitle;
 
             var enriched = new ToolError
             {

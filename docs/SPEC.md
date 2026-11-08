@@ -89,7 +89,7 @@ Acceptance gates: [phases.md](phases.md).
 ## Non-goals (MVP)
 
 - Multi-agent orchestration (UFO HostAgent)
-- Record-and-replay script export
+- Record-and-replay script export (declarative scenarios are in scope: [scenarios.md](scenarios.md), [ADR-0001](adr/0001-core-library-and-scenarios.md))
 - Remote/cross-OS desktop control
 - HTTP MCP transport (Phase 1)
 - Separate WebDriver/JSON-RPC controller layer (MCP is the agent interface)
