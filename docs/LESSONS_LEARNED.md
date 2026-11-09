@@ -24,3 +24,13 @@ Staging: `.agent/scratch/transcript-mining/REVIEW.md`.
 - **Semantic patterns before coordinate clicks**: Always attempt `InvokePattern`, `TogglePattern`, `SelectionItemPattern` (tabs/lists), and `ExpandCollapsePattern` (combos/trees) before falling back to physical `SendInput` mouse clicks.
 - **UIPI and Elevation boundaries**: Windows silently blocks `SendInput` from medium integrity to elevated processes without notifying the caller. Servers should detect elevated windows or mismatched integrity and fail fast with actionable hints (`UIPIBlocked`) rather than hanging.
 - **Diagnostic failure telemetry**: Always capture foreground HWND, active window title, and modal child windows on action failure so AI agents can diagnose focus loss or unexpected blocking dialogs.
+
+## Agent usage lessons (Nov 2026 transcript review)
+
+Details and fix status: [research/agent-transcript-findings-2026-11.md](research/agent-transcript-findings-2026-11.md).
+
+- **Return images as MCP image blocks**: base64 inside JSON text overflowed client tool-result limits in 56 of 70 screenshots; agents could not see the image at all.
+- **Keyboard tools must name their target**: untargeted SendInput went to whatever window was in front, including the agent's own terminal. Verify the foreground right before each key and report the receiving window.
+- **Main-window heuristics need more than the process id**: helper windows can be zero-size, launcher stubs (`wt.exe`, `explorer.exe`) hand windows to other processes, and session-restoring apps (Windows 11 Notepad) open old documents next to the new one.
+- **Coordinates are the main path for many apps**: GPUI, Electron, Lightroom and custom WPF expose little UIA; screenshots must carry origin and scale so pixels map to screen points.
+- **Gate environments matter**: disable Notepad session restore and run desktop gates on an idle desktop; Windows' foreground lock makes `focus_window` fail while the user is typing.
