@@ -4,6 +4,7 @@ Project skills live under [`.cursor/skills/`](../.cursor/skills/). Each skill ha
 
 | Skill | When to use | Related commands |
 |-------|-------------|------------------|
+| `win-gui-mcp-usage` | Operating Windows apps through the win-gui-mcp tools (agent-side usage, not implementation) | — |
 | `win-gui-mcp-tools` | Implementing MCP tools, phase-gate testing | `/implement-tool`, `/phase-gate` |
 | `win-gui-mcp-implementation` | Scaffolding modules, Phase 1 bootstrap | `/bootstrap-phase1`, `/implement` |
 | `win-gui-mcp-server-design` | MCP transport, tool registration, schema review | `/mcp-tool-review` |

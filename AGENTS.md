@@ -76,6 +76,7 @@ Type `/` in Cursor chat:
 
 | Skill | Trigger |
 |-------|---------|
+| `win-gui-mcp-usage` | Driving Windows apps through the win-gui-mcp tools |
 | `win-gui-mcp-tools` | MCP tool work, `/implement-tool` |
 | `win-gui-mcp-implementation` | `/bootstrap-phase1`, `/implement` |
 | `win-gui-mcp-server-design` | `/mcp-tool-review`, MCP server changes |

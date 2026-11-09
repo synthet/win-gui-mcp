@@ -331,7 +331,7 @@
       "destructive": true,
       "openWorld": false,
       "structured": true,
-      "description": "Sends a key chord to the foreground window.",
+      "description": "Sends a key chord. Pass handle to focus and verify the target window first (FocusFailed otherwise); the result reports the receiving window in target.",
       "parameters": [
         {
           "name": "keys",
@@ -441,7 +441,7 @@
       "destructive": true,
       "openWorld": false,
       "structured": true,
-      "description": "Presses an individual key (e.g. Tab, Enter, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Delete, Backspace, F1-F12) one or more times.",
+      "description": "Presses an individual key (e.g. Tab, Enter, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Delete, Backspace, F1-F12) one or more times. With handle, the foreground is re-checked before every repetition (FocusFailed with details.sentCount if it changed).",
       "parameters": [
         {
           "name": "key",
@@ -476,7 +476,7 @@
       "destructive": false,
       "openWorld": false,
       "structured": true,
-      "description": "Captures a window or full screen (automatically falls back to PrintWindow / Desktop DC for GPU/DirectX windows).",
+      "description": "Captures a window or full screen as an image content block (falls back to PrintWindow / Desktop DC for GPU/DirectX windows). Metadata gives origin and scale: screen x = origin.x \u002B round(imageX / scale). region* is relative to the captured image, in physical pixels.",
       "parameters": [
         {
           "name": "handle",
@@ -786,7 +786,7 @@
       "destructive": true,
       "openWorld": false,
       "structured": true,
-      "description": "Types text into the focused control or a specific ref (auto-falls back to keyboard simulation if ValuePattern is read-only).",
+      "description": "Types text into a ref, or into the window given by handle (focused and verified first; FocusFailed if it cannot take the foreground). Without ref or handle, keys go to whatever window is in front. Keyboard-path results report the receiving window in target. method: auto | pattern | keyboard.",
       "parameters": [
         {
           "name": "text",
@@ -823,6 +823,12 @@
           "type": "String",
           "optional": true,
           "default": "auto"
+        },
+        {
+          "name": "handle",
+          "type": "Int32?",
+          "optional": true,
+          "default": null
         }
       ]
     },
@@ -1666,6 +1672,9 @@
           },
           "ref": {
             "type": "string"
+          },
+          "handle": {
+            "type": "integer"
           },
           "clearFirst": {
             "type": "boolean"

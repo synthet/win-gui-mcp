@@ -39,3 +39,21 @@ Schema: [tools.md#hotkey](../../tools.md#hotkey).
 **Verification:** `(manual)` Ctrl+S on Notepad with handle param.
 
 **Out of scope:** includeSnapshot required for gate (optional only).
+
+---
+
+### TR-P1-TOOL-Hotkey-003 - Foreground verification and target report
+
+**Priority:** Must  
+**Depends on:** TR-P1-TOOL-Hotkey-002  
+**Spec refs:** [tools.md#keyboard-input-target](../../tools.md#keyboard-input-target)
+
+**Requirement:** `hotkey` and `press_key` with `handle` SHALL verify the foreground window immediately before each chord or repetition and stop with `FocusFailed` when it changed. Responses SHALL include `target: { handle, title }`.
+
+**Acceptance criteria:**
+- [ ] `press_key` with `count > 1` re-checks the foreground before every repetition.
+- [ ] Responses report the foreground window in `target`.
+
+**Verification:** `(manual)` press_key with count while another window steals focus.
+
+**Out of scope:** Preventing other processes from taking the foreground.

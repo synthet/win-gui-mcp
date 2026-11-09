@@ -19,4 +19,8 @@
     <ProjectReference Include="..\WinGuiMcp.Core\WinGuiMcp.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="WinGuiMcp.Tests" />
+  </ItemGroup>
+
 </Project>

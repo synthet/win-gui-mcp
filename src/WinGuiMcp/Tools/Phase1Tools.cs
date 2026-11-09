@@ -124,15 +124,16 @@ public sealed class Phase1Tools
         Execute(() => _tools.Scroll(@ref, x, y, direction, amount, includeSnapshot));
 
     [McpServerTool(Name = "type_text", ReadOnly = false, Destructive = true, OpenWorld = false, UseStructuredContent = true, OutputSchemaType = typeof(System.Text.Json.Nodes.JsonObject))]
-    [Description("Types text into the focused control or a specific ref (auto-falls back to keyboard simulation if ValuePattern is read-only).")]
+    [Description("Types text into a ref, or into the window given by handle (focused and verified first; FocusFailed if it cannot take the foreground). Without ref or handle, keys go to whatever window is in front. Keyboard-path results report the receiving window in target. method: auto | pattern | keyboard.")]
     public Task<CallToolResult> TypeText(
         string text,
         string? @ref = null,
         bool clearFirst = false,
         bool submit = false,
         bool includeSnapshot = false,
-        string method = "auto") =>
-        Execute(() => _tools.TypeText(text, @ref, clearFirst, submit, includeSnapshot, method));
+        string method = "auto",
+        int? handle = null) =>
+        Execute(() => _tools.TypeText(text, @ref, clearFirst, submit, includeSnapshot, method, handle));
 
     [McpServerTool(Name = "set_value", ReadOnly = false, Destructive = true, OpenWorld = false, UseStructuredContent = true, OutputSchemaType = typeof(System.Text.Json.Nodes.JsonObject))]
     [Description("Sets control value directly via UIA ValuePattern or RangeValuePattern.")]
@@ -143,7 +144,7 @@ public sealed class Phase1Tools
         Execute(() => _tools.SetValue(@ref, value, includeSnapshot));
 
     [McpServerTool(Name = "hotkey", ReadOnly = false, Destructive = true, OpenWorld = false, UseStructuredContent = true, OutputSchemaType = typeof(System.Text.Json.Nodes.JsonObject))]
-    [Description("Sends a key chord to the foreground window.")]
+    [Description("Sends a key chord. Pass handle to focus and verify the target window first (FocusFailed otherwise); the result reports the receiving window in target.")]
     public Task<CallToolResult> Hotkey(
         string keys,
         int? handle = null,
@@ -151,7 +152,7 @@ public sealed class Phase1Tools
         Execute(() => _tools.Hotkey(keys, handle, includeSnapshot));
 
     [McpServerTool(Name = "press_key", ReadOnly = false, Destructive = true, OpenWorld = false, UseStructuredContent = true, OutputSchemaType = typeof(System.Text.Json.Nodes.JsonObject))]
-    [Description("Presses an individual key (e.g. Tab, Enter, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Delete, Backspace, F1-F12) one or more times.")]
+    [Description("Presses an individual key (e.g. Tab, Enter, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Delete, Backspace, F1-F12) one or more times. With handle, the foreground is re-checked before every repetition (FocusFailed with details.sentCount if it changed).")]
     public Task<CallToolResult> PressKey(
         string key,
         int? handle = null,
@@ -160,7 +161,7 @@ public sealed class Phase1Tools
         Execute(() => _tools.PressKey(key, handle, count, includeSnapshot));
 
     [McpServerTool(Name = "screenshot", ReadOnly = true, Destructive = false, OpenWorld = false, UseStructuredContent = true, OutputSchemaType = typeof(System.Text.Json.Nodes.JsonObject))]
-    [Description("Captures a window or full screen (automatically falls back to PrintWindow / Desktop DC for GPU/DirectX windows).")]
+    [Description("Captures a window or full screen as an image content block (falls back to PrintWindow / Desktop DC for GPU/DirectX windows). Metadata gives origin and scale: screen x = origin.x + round(imageX / scale). region* is relative to the captured image, in physical pixels.")]
     public Task<CallToolResult> Screenshot(
         int? handle = null,
         int? regionX = null,

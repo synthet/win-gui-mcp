@@ -1,6 +1,6 @@
 # MCP tool reference
 
-Tool responses retain their readable JSON text content and also return the same object as MCP `structuredContent`. Tool execution errors set MCP `isError: true`; an embedded `ok: false` alone is insufficient. Each tool advertises an object output schema and read/write annotations. These annotations describe behavior and do not authorize it. Existing tool names and text payload shapes remain available.
+Tool responses retain their readable JSON text content and also return the same object as MCP `structuredContent` (exception: `screenshot` returns its pixels as an MCP `image` content block, not inside the JSON). Tool execution errors set MCP `isError: true`; an embedded `ok: false` alone is insufficient. Each tool advertises an object output schema and read/write annotations. These annotations describe behavior and do not authorize it. Existing tool names and text payload shapes remain available.
 
 Normative definitions for WinGuiMcp MCP tools. Phase 1 tools are **required for MVP**; Phase 2+ tools are specified now but implemented in later phases (see [phases.md](phases.md)).
 
@@ -49,6 +49,14 @@ When `true`, the response includes a **full tree refresh** (not a diff) for the 
 The `tree` field is a UEM root node per [data-model.md](data-model.md). Taking a `snapshotDelta` invalidates prior refs for that window (same as `snapshot`).
 
 Diff-only snapshots are a Phase 2 optimization; MVP always returns the full pruned tree.
+
+### Keyboard input target
+
+Tools that send keystrokes through SendInput (`type_text` on its keyboard path, `hotkey`, `press_key`) accept `handle`.
+
+- With `handle`, the server focuses that window and checks that it is the foreground window immediately before each key or chord. If another window holds the foreground, the call fails with `FocusFailed` and sends no further input. `details.sentCount` reports how many repetitions were sent before the failure.
+- Without `handle` (and, for `type_text`, without `ref`), input goes to whichever window is in the foreground.
+- SendInput-path responses include `target: { "handle": 12345678, "title": "Notepad" }` — the foreground window when input finished — so the caller can confirm where the keys went.
 
 Post-action `_warning` fields (see [errors.md](errors.md)) may appear alongside `snapshotDelta`. Warning emission is **specified now**; implementation is Phase 2.
 
@@ -139,7 +147,16 @@ Starts an application by executable path or Application User Model ID (AUMID).
 }
 ```
 
-**Execution:** `Process.Start` or shell `ShellExecute` for AUMID; poll `list_windows` until match or timeout → `LaunchFailed` / `Timeout`.
+**Execution:** `Process.Start` or shell `ShellExecute` for AUMID; poll top-level windows until match or timeout → `LaunchFailed` / `Timeout`.
+
+Window selection, in order:
+
+1. Windows owned by the launched process id.
+2. Windows of the expected process name (path stem, launcher hint, or UWP host for Calculator).
+3. Windows that did not exist before the launch. This covers launcher stubs such as `wt.exe` or `explorer.exe` that hand the window to another, already-running process. Only windows with a real title are considered here.
+4. Title hint for known apps.
+
+Within each step, a candidate must have a non-empty on-screen rectangle (zero-size helper windows are skipped) and is ranked: not cloaked, not a tool window, has a real title (not the process-name fallback that `list_windows` uses for untitled windows), new since the launch, not minimized, in the foreground, then largest area. Foreground ranks above area because apps that restore a previous session (Windows 11 Notepad) open older windows next to the new one.
 
 ---
 
@@ -386,12 +403,22 @@ Types text into the focused control or a specific ref.
   "required": ["text"],
   "properties": {
     "ref": { "type": "string" },
+    "handle": {
+      "type": "integer",
+      "description": "Window to focus and verify before keyboard input when no ref is given. Ignored when ref is given (the ref's window is used)."
+    },
     "text": { "type": "string" },
     "clearFirst": { "type": "boolean", "default": false },
     "submit": {
       "type": "boolean",
       "default": false,
       "description": "Send Enter after text"
+    },
+    "method": {
+      "type": "string",
+      "enum": ["auto", "pattern", "keyboard"],
+      "default": "auto",
+      "description": "auto: ValuePattern when possible, else keystrokes; pattern: ValuePattern only; keyboard: keystrokes only"
     },
     "includeSnapshot": { "type": "boolean", "default": false }
   },
@@ -408,9 +435,11 @@ Types text into the focused control or a specific ref.
 }
 ```
 
+SendInput-path responses add `target` (see [Keyboard input target](#keyboard-input-target)).
+
 **Execution:**
 
-1. If `ref`: focus element via UIA `SetFocus`.
+1. If `ref`: focus element via UIA `SetFocus`. Else if `handle`: focus that window and verify it holds the foreground (`FocusFailed` otherwise).
 2. **ValuePattern path** — use `ValuePattern.SetValue` when the element supports ValuePattern AND either:
    - `clearFirst: true`, or
    - the operation replaces the entire field value (empty field or full replace semantics).
@@ -482,11 +511,12 @@ Sends a key chord to the foreground window.
 ```json
 {
   "ok": true,
-  "method": "SendInput"
+  "method": "SendInput",
+  "target": { "handle": 12345678, "title": "Notepad" }
 }
 ```
 
-**Execution:** If `handle` is supplied, focus that window first. Parse modifier
+**Execution:** If `handle` is supplied, focus that window and verify it holds the foreground immediately before sending (see [Keyboard input target](#keyboard-input-target)). Parse modifier
 and key names, then send the sequence through SendInput. Error:
 `InvalidArgument`, `FocusFailed`, `UIPIBlocked`.
 
@@ -508,15 +538,10 @@ Captures a window or full screen.
       "type": "integer",
       "description": "Omit for full screen"
     },
-    "region": {
-      "type": "object",
-      "properties": {
-        "x": { "type": "integer" },
-        "y": { "type": "integer" },
-        "width": { "type": "integer" },
-        "height": { "type": "integer" }
-      }
-    },
+    "regionX": { "type": "integer", "description": "Crop origin in physical pixels, relative to the captured image (window top-left, or screen origin when handle is omitted)" },
+    "regionY": { "type": "integer" },
+    "regionWidth": { "type": "integer" },
+    "regionHeight": { "type": "integer" },
     "scale": {
       "type": "number",
       "default": 1.0,
@@ -529,19 +554,28 @@ Captures a window or full screen.
 }
 ```
 
+The four `region*` fields are all-or-nothing; a partial region is `InvalidArgument`.
+
 **Output**
+
+The MCP result carries the pixels as an `image` content block (`mimeType: image/png`), followed by a text block with the metadata below. `structuredContent` holds the same metadata. The image is **not** embedded as base64 in the JSON text, so clients render it as an image instead of a large text payload.
 
 ```json
 {
   "ok": true,
-  "imageBase64": "…",
   "mimeType": "image/png",
   "width": 1024,
-  "height": 768
+  "height": 768,
+  "origin": { "x": 720, "y": 232 },
+  "scale": 0.5
 }
 ```
 
-**Execution:** Windows.Graphics.Capture (WGC) per-window; BitBlt fallback Phase 1 if WGC unavailable. Phase 2: DXGI for full-screen games.
+- `origin` — physical screen coordinates of the image's top-left pixel (after any region crop).
+- `scale` — image pixels per physical screen pixel.
+- Map an image pixel `(px, py)` to a screen point for `click`, `drag`, `scroll`, or `inspect_at`: `x = origin.x + round(px / scale)`, `y = origin.y + round(py / scale)`.
+
+**Execution:** Windows.Graphics.Capture (WGC) per-window; PrintWindow, then desktop BitBlt, when WGC fails or returns a blank frame. Phase 2: DXGI for full-screen games. `origin` follows the path used: DWM extended frame bounds for WGC, the window rectangle for PrintWindow / BitBlt, `(0, 0)` for full screen.
 
 ---
 
@@ -669,7 +703,7 @@ Input: `{ handle }`. Checks whether a window is disabled by or owns an active mo
 
 ### `press_key` (Implemented)
 
-Input: `{ key, handle?, count?, includeSnapshot? }`. Sends a single key (`Tab`, `Enter`, `Escape`, `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Delete`, `Backspace`, `F1`-`F12`) one or more times.
+Input: `{ key, handle?, count?, includeSnapshot? }`. Sends a single key (`Tab`, `Enter`, `Escape`, `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Delete`, `Backspace`, `F1`-`F12`) one or more times. With `handle`, the foreground is re-verified before every repetition (see [Keyboard input target](#keyboard-input-target)). Returns `{ ok: true, method: "SendInput", target }`.
 
 ### `search_tools` (Implemented)
 

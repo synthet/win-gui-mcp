@@ -15,7 +15,7 @@
 **Requirement:** Per-window screenshot SHALL use **Windows.Graphics.Capture** when available.
 
 **Acceptance criteria:**
-- [ ] Response includes `imageBase64`, `mimeType: image/png`, `width`, `height`.
+- [ ] Capture result includes PNG bytes, `mimeType: image/png`, `width`, `height`, `origin`, `scale`; the MCP layer returns the bytes as an `image` content block.
 - [ ] Optional `scale` downscales per tools.md.
 
 **Verification:** `(manual)` MCP `screenshot` with Calculator handle.
