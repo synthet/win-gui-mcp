@@ -160,3 +160,12 @@ public sealed class WindowInfo
     public required bool IsForeground { get; init; }
     public required bool IsMinimized { get; init; }
 }
+
+/// <summary>A top-level window plus the signals used to choose an app's main window after launch.</summary>
+public sealed record LaunchCandidate(
+    WindowInfo Window,
+    long Area,
+    bool IsCloaked,
+    bool IsToolWindow,
+    bool HasRealTitle,
+    bool IsNew);

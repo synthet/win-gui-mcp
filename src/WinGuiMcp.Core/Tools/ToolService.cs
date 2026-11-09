@@ -286,7 +286,7 @@ public sealed class ToolService
         return BuildActionResponse(result.Method, refValue, includeSnapshot);
     }
 
-    public object TypeText(string text, string? refValue, bool clearFirst, bool submit, bool includeSnapshot, string method = "auto")
+    public object TypeText(string text, string? refValue, bool clearFirst, bool submit, bool includeSnapshot, string method = "auto", int? handle = null)
     {
         _session.EnsureNotExpired();
         RefEntry? entry = null;
@@ -297,10 +297,17 @@ public sealed class ToolService
             var snapshotId = _session.GetCurrentSnapshotId(windowIndex);
             entry = _session.RefTable.Resolve(refValue, snapshotId);
         }
+        else if (handle is > 0)
+        {
+            // FocusWindow throws FocusFailed unless the window ends up in the foreground,
+            // so no keystroke is sent to whichever window happened to be active.
+            _windowEnumerator.FocusWindow(handle.Value);
+        }
 
         var result = _patternExecutor.TypeText(entry, text, clearFirst, submit, method);
         _session.TouchActivity();
-        return BuildActionResponse(result.Method, refValue, includeSnapshot);
+        return BuildActionResponse(result.Method, refValue, includeSnapshot,
+            target: result.Method == "SendInput" ? ForegroundTarget() : null);
     }
 
     public object SetValue(string refValue, string value, bool includeSnapshot)
@@ -319,11 +326,14 @@ public sealed class ToolService
         _session.EnsureNotExpired();
 
         if (handle is > 0)
+        {
             _windowEnumerator.FocusWindow(handle.Value);
+            EnsureStillForeground(handle.Value, sentCount: 0);
+        }
 
         _inputSimulator.SendHotkey(keys);
         _session.TouchActivity();
-        return BuildActionResponse("SendInput", null, includeSnapshot);
+        return BuildActionResponse("SendInput", null, includeSnapshot, target: ForegroundTarget());
     }
 
     public object PressKey(string key, int? handle, int count = 1, bool includeSnapshot = false)
@@ -334,13 +344,34 @@ public sealed class ToolService
             _windowEnumerator.FocusWindow(handle.Value);
 
         for (var i = 0; i < Math.Max(1, count); i++)
+        {
+            if (handle is > 0)
+                EnsureStillForeground(handle.Value, sentCount: i);
             _inputSimulator.SendHotkey(key);
+        }
 
         _session.TouchActivity();
-        return BuildActionResponse("SendInput", null, includeSnapshot);
+        return BuildActionResponse("SendInput", null, includeSnapshot, target: ForegroundTarget());
     }
 
-    public object Screenshot(int? handle, CaptureRegion? region, double scale)
+    private static void EnsureStillForeground(int handle, int sentCount)
+    {
+        var foreground = NativeMethods.GetForegroundWindow();
+        if (foreground == (nint)handle)
+            return;
+
+        throw new ToolException(ErrorCodes.FocusFailed,
+            "Another window took the foreground before input was sent; no further keys were sent.",
+            new Dictionary<string, object?> { ["handle"] = handle, ["sentCount"] = sentCount });
+    }
+
+    private static object ForegroundTarget()
+    {
+        var foreground = NativeMethods.GetForegroundWindow();
+        return new { handle = (int)foreground, title = WindowEnumerator.GetWindowTitle(foreground) };
+    }
+
+    public ScreenshotEnvelope Screenshot(int? handle, CaptureRegion? region, double scale)
     {
         _session.EnsureNotExpired();
         _session.TouchActivity();
@@ -349,13 +380,15 @@ public sealed class ToolService
             throw new ToolException(ErrorCodes.InvalidArgument, "handle must be a non-zero HWND integer.");
 
         var result = _windowCapture.Capture(handle, region, scale);
-        return new
+        return new ScreenshotEnvelope
         {
-            ok = true,
-            imageBase64 = result.ImageBase64,
-            mimeType = result.MimeType,
-            width = result.Width,
-            height = result.Height
+            ImageBase64 = result.ImageBase64,
+            ImageBytes = result.ImageBytes,
+            MimeType = result.MimeType,
+            Width = result.Width,
+            Height = result.Height,
+            Origin = new ScreenPoint(result.OriginX, result.OriginY),
+            Scale = result.Scale
         };
     }
 
@@ -634,32 +667,20 @@ public sealed class ToolService
         }
     }
 
-    private object BuildActionResponse(string method, string? refValue, bool includeSnapshot, bool includeMethod = true)
+    private object BuildActionResponse(string method, string? refValue, bool includeSnapshot, bool includeMethod = true, object? target = null)
     {
-        if (!includeSnapshot)
-        {
-            if (includeMethod)
-                return new { ok = true, method };
-            return new { ok = true };
-        }
+        var response = new Dictionary<string, object?> { ["ok"] = true };
+        if (includeMethod)
+            response["method"] = method;
+        if (target is not null)
+            response["target"] = target;
 
-        if (string.IsNullOrEmpty(refValue))
-            return includeMethod ? new { ok = true, method } : new { ok = true };
+        if (!includeSnapshot || string.IsNullOrEmpty(refValue))
+            return response;
 
         var (windowIndex, _) = RefFormat.Parse(refValue);
         var handle = (int)_session.GetHandle(windowIndex);
-        var snapshot = Snapshot(handle, "window", "control", includeOffscreen: false);
-
-        if (includeMethod)
-        {
-            return new
-            {
-                ok = true,
-                method,
-                snapshotDelta = snapshot
-            };
-        }
-
-        return new { ok = true, snapshotDelta = snapshot };
+        response["snapshotDelta"] = Snapshot(handle, "window", "control", includeOffscreen: false);
+        return response;
     }
 }

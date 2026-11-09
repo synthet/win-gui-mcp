@@ -111,6 +111,7 @@ public sealed class WindowEnumerator
 
         Process? process = null;
         var shellUriLaunch = IsShellUri(path);
+        var preexisting = ListWindows(null, includeMinimized: true).Select(w => w.Handle).ToHashSet();
         try
         {
             if (!string.IsNullOrWhiteSpace(path))
@@ -153,7 +154,8 @@ public sealed class WindowEnumerator
         var deadline = DateTime.UtcNow.AddMilliseconds(waitForWindowMs);
         while (DateTime.UtcNow < deadline)
         {
-            var match = FindLaunchedWindow(path, appUserModelId, processId, processNameHint);
+            var launcherExited = process is null || SafeHasExited(process);
+            var match = FindLaunchedWindow(path, appUserModelId, processId, processNameHint, preexisting, launcherExited);
             if (match is not null)
                 return match;
 
@@ -163,7 +165,8 @@ public sealed class WindowEnumerator
                     !PreferProcessDiscovery(path) &&
                     process is not null &&
                     !process.HasExited &&
-                    process.MainWindowHandle != IntPtr.Zero)
+                    process.MainWindowHandle != IntPtr.Zero &&
+                    HasOnScreenArea(process.MainWindowHandle))
                 {
                     var handle = process.MainWindowHandle;
                     return new LaunchResult
@@ -185,12 +188,19 @@ public sealed class WindowEnumerator
         throw new ToolException(ErrorCodes.Timeout, "Application launched but no window appeared within waitForWindowMs.");
     }
 
-    private LaunchResult? FindLaunchedWindow(string? path, string? appUserModelId, int launcherPid, string processNameHint)
+    private LaunchResult? FindLaunchedWindow(
+        string? path,
+        string? appUserModelId,
+        int launcherPid,
+        string processNameHint,
+        IReadOnlySet<int> preexisting,
+        bool launcherExited)
     {
         var windows = ListWindows(null, includeMinimized: true);
+        var candidates = windows.Select(w => DescribeCandidate(w, preexisting)).ToList();
 
         var byLauncherPid = launcherPid > 0
-            ? windows.FirstOrDefault(w => w.Pid == launcherPid)
+            ? PickMainWindow(candidates.Where(c => c.Window.Pid == launcherPid))
             : null;
         if (byLauncherPid is not null)
             return ToLaunchResult(byLauncherPid);
@@ -198,13 +208,9 @@ public sealed class WindowEnumerator
         var expectedProcess = ResolveExpectedProcessName(path, appUserModelId, processNameHint);
         if (!string.IsNullOrEmpty(expectedProcess))
         {
-            var byProcess = windows
-                .Where(w => w.ProcessName.Equals(expectedProcess, StringComparison.OrdinalIgnoreCase) ||
-                            w.ProcessName.Contains(expectedProcess, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(w => w.IsMinimized)
-                .ThenByDescending(w => w.IsForeground)
-                .ThenByDescending(w => w.Handle)
-                .FirstOrDefault();
+            var byProcess = PickMainWindow(candidates
+                .Where(c => c.Window.ProcessName.Equals(expectedProcess, StringComparison.OrdinalIgnoreCase) ||
+                            c.Window.ProcessName.Contains(expectedProcess, StringComparison.OrdinalIgnoreCase)));
 
             if (byProcess is not null)
                 return ToLaunchResult(byProcess);
@@ -222,6 +228,15 @@ public sealed class WindowEnumerator
                 return ToLaunchResult(frameHost);
         }
 
+        // Launcher stubs (wt.exe, explorer.exe, shell URIs) exit and hand the window to another,
+        // already-running process: accept a titled window that did not exist before the launch.
+        if (launcherExited)
+        {
+            var appeared = PickMainWindow(candidates.Where(c => c.IsNew && c.HasRealTitle));
+            if (appeared is not null)
+                return ToLaunchResult(appeared);
+        }
+
         var titleHint = ResolveTitleHint(path);
         if (!string.IsNullOrEmpty(titleHint))
         {
@@ -235,6 +250,60 @@ public sealed class WindowEnumerator
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Picks the most plausible main window: skips zero-size helper windows, then prefers
+    /// not cloaked, not a tool window, a real title, new since launch, not minimized, foreground,
+    /// largest area. Foreground beats area because apps that restore a session (Windows 11 Notepad)
+    /// open older, larger windows next to the new one, and the new one takes the foreground.
+    /// </summary>
+    public static WindowInfo? PickMainWindow(IEnumerable<LaunchCandidate> candidates) =>
+        candidates
+            .Where(c => c.Area > 0)
+            .OrderBy(c => c.IsCloaked)
+            .ThenBy(c => c.IsToolWindow)
+            .ThenByDescending(c => c.HasRealTitle)
+            .ThenByDescending(c => c.IsNew)
+            .ThenBy(c => c.Window.IsMinimized)
+            .ThenByDescending(c => c.Window.IsForeground)
+            .ThenByDescending(c => c.Area)
+            .Select(c => c.Window)
+            .FirstOrDefault();
+
+    private static LaunchCandidate DescribeCandidate(WindowInfo window, IReadOnlySet<int> preexisting)
+    {
+        var hwnd = (nint)window.Handle;
+        var cloaked = NativeMethods.DwmGetWindowAttributeInt(hwnd, NativeMethods.DWMWA_CLOAKED, out var cloakedValue, sizeof(int)) == 0 &&
+                      cloakedValue != 0;
+        var toolWindow = (NativeMethods.GetWindowLongPtrW(hwnd, NativeMethods.GWL_EXSTYLE).ToInt64() & NativeMethods.WS_EX_TOOLWINDOW) != 0;
+
+        return new LaunchCandidate(
+            window,
+            OnScreenArea(hwnd),
+            cloaked,
+            toolWindow,
+            HasRealTitle: !string.IsNullOrWhiteSpace(GetWindowTitle(hwnd)),
+            IsNew: !preexisting.Contains(window.Handle));
+    }
+
+    private static long OnScreenArea(nint hwnd) =>
+        NativeMethods.GetWindowRect(hwnd, out var rect)
+            ? (long)Math.Max(0, rect.Width) * Math.Max(0, rect.Height)
+            : 0;
+
+    private static bool HasOnScreenArea(nint hwnd) => OnScreenArea(hwnd) > 0;
+
+    private static bool SafeHasExited(Process process)
+    {
+        try
+        {
+            return process.HasExited;
+        }
+        catch (InvalidOperationException)
+        {
+            return true;
+        }
     }
 
     private static bool PreferProcessDiscovery(string? path)

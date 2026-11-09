@@ -1,5 +1,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 using WinGuiMcp.Common;
 using WinGuiMcp.Platform;
 
@@ -14,8 +16,9 @@ public sealed class WindowCapture
             if (handle is 0)
                 throw new ToolException(ErrorCodes.InvalidArgument, "handle must be a non-zero HWND integer.");
 
-            using var bitmap = CaptureBitmap(handle);
-            using var cropped = ApplyRegion(bitmap, region);
+            using var bitmap = CaptureBitmap(handle, out var originX, out var originY);
+            var crop = ResolveRegion(bitmap.Width, bitmap.Height, region);
+            using var cropped = ApplyRegion(bitmap, region is null ? null : crop);
             using var scaled = ApplyScale(cropped, scale, out var finalWidth, out var finalHeight);
 
             using var ms = new MemoryStream();
@@ -23,10 +26,13 @@ public sealed class WindowCapture
 
             return new CaptureResult
             {
-                ImageBase64 = Convert.ToBase64String(ms.ToArray()),
+                ImageBytes = ms.ToArray(),
                 MimeType = "image/png",
                 Width = finalWidth,
-                Height = finalHeight
+                Height = finalHeight,
+                OriginX = originX + crop.X,
+                OriginY = originY + crop.Y,
+                Scale = Math.Round(finalWidth / (double)cropped.Width, 4)
             };
         }
         catch (ToolException)
@@ -52,8 +58,8 @@ public sealed class WindowCapture
             if (handle is 0)
                 throw new ToolException(ErrorCodes.InvalidArgument, "handle must be a non-zero HWND integer.");
 
-            using var bitmap = CaptureBitmap(handle);
-            using var cropped = ApplyRegion(bitmap, region);
+            using var bitmap = CaptureBitmap(handle, out _, out _);
+            using var cropped = ApplyRegion(bitmap, region is null ? null : ResolveRegion(bitmap.Width, bitmap.Height, region));
             using var scaled = ApplyScale(cropped, scale, out var finalWidth, out var finalHeight);
 
             var full = Path.GetFullPath(outputPath);
@@ -76,8 +82,10 @@ public sealed class WindowCapture
         }
     }
 
-    private static Bitmap CaptureBitmap(nint? handle)
+    private static Bitmap CaptureBitmap(nint? handle, out int originX, out int originY)
     {
+        originX = 0;
+        originY = 0;
         if (handle is > 0)
         {
             var hwnd = (nint)handle.Value;
@@ -90,7 +98,16 @@ public sealed class WindowCapture
                 if (wgcBitmap is not null)
                 {
                     if (!IsBlankBitmap(wgcBitmap))
+                    {
+                        // WGC captures the DWM visual bounds, which exclude the invisible resize border.
+                        if (NativeMethods.DwmGetWindowAttributeRect(hwnd, NativeMethods.DWMWA_EXTENDED_FRAME_BOUNDS, out var frame, Marshal.SizeOf<NativeMethods.RECT>()) == 0 ||
+                            NativeMethods.GetWindowRect(hwnd, out frame))
+                        {
+                            originX = frame.Left;
+                            originY = frame.Top;
+                        }
                         return wgcBitmap;
+                    }
                     wgcBitmap.Dispose();
                 }
             }
@@ -103,14 +120,26 @@ public sealed class WindowCapture
             if (printBitmap is not null)
             {
                 if (!IsBlankBitmap(printBitmap))
+                {
+                    SetOriginFromWindowRect(hwnd, out originX, out originY);
                     return printBitmap;
+                }
                 printBitmap.Dispose();
             }
 
-            return CaptureWindowFromDesktop(hwnd);
+            var desktopBitmap = CaptureWindowFromDesktop(hwnd);
+            SetOriginFromWindowRect(hwnd, out originX, out originY);
+            return desktopBitmap;
         }
 
         return CaptureFullDesktop();
+    }
+
+    private static void SetOriginFromWindowRect(nint hwnd, out int originX, out int originY)
+    {
+        NativeMethods.GetWindowRect(hwnd, out var rect);
+        originX = rect.Left;
+        originY = rect.Top;
     }
 
     private static Bitmap? TryPrintWindow(nint hwnd)
@@ -217,19 +246,28 @@ public sealed class WindowCapture
         return true;
     }
 
-    private static Bitmap ApplyRegion(Bitmap source, CaptureRegion? region)
+    /// <summary>Clamps a requested crop to the source image; returns the full image when no region is given.</summary>
+    public static Rectangle ResolveRegion(int sourceWidth, int sourceHeight, CaptureRegion? region)
     {
         if (region is null)
+            return new Rectangle(0, 0, sourceWidth, sourceHeight);
+
+        var x = Math.Clamp(region.X, 0, Math.Max(0, sourceWidth - 1));
+        var y = Math.Clamp(region.Y, 0, Math.Max(0, sourceHeight - 1));
+        var width = Math.Clamp(region.Width, 1, sourceWidth - x);
+        var height = Math.Clamp(region.Height, 1, sourceHeight - y);
+        return new Rectangle(x, y, width, height);
+    }
+
+    private static Bitmap ApplyRegion(Bitmap source, Rectangle? crop)
+    {
+        if (crop is null)
             return new Bitmap(source);
 
-        var x = Math.Clamp(region.X, 0, Math.Max(0, source.Width - 1));
-        var y = Math.Clamp(region.Y, 0, Math.Max(0, source.Height - 1));
-        var width = Math.Clamp(region.Width, 1, source.Width - x);
-        var height = Math.Clamp(region.Height, 1, source.Height - y);
-
-        var cropped = new Bitmap(width, height);
+        var c = crop.Value;
+        var cropped = new Bitmap(c.Width, c.Height);
         using var g = Graphics.FromImage(cropped);
-        g.DrawImage(source, new Rectangle(0, 0, width, height), x, y, width, height, GraphicsUnit.Pixel);
+        g.DrawImage(source, new Rectangle(0, 0, c.Width, c.Height), c.X, c.Y, c.Width, c.Height, GraphicsUnit.Pixel);
         return cropped;
     }
 
@@ -261,10 +299,18 @@ public sealed class CaptureRegion
 
 public sealed class CaptureResult
 {
-    public required string ImageBase64 { get; init; }
+    public required byte[] ImageBytes { get; init; }
+    public string ImageBase64 => Convert.ToBase64String(ImageBytes);
     public required string MimeType { get; init; }
     public required int Width { get; init; }
     public required int Height { get; init; }
+
+    /// <summary>Physical screen coordinates of the image's top-left pixel.</summary>
+    public required int OriginX { get; init; }
+    public required int OriginY { get; init; }
+
+    /// <summary>Image pixels per physical screen pixel.</summary>
+    public required double Scale { get; init; }
 }
 
 public sealed class CaptureFileResult
@@ -274,3 +320,27 @@ public sealed class CaptureFileResult
     public required int Height { get; init; }
     public required string Sha256 { get; init; }
 }
+
+/// <summary>
+/// Screenshot tool payload. The MCP layer sends <see cref="ImageBytes"/> as an image content block
+/// and serializes only <see cref="Metadata"/>; in-process callers still get <see cref="ImageBase64"/>.
+/// </summary>
+public sealed class ScreenshotEnvelope
+{
+    public bool Ok { get; init; } = true;
+    public required string ImageBase64 { get; init; }
+
+    // Not `required`: System.Text.Json rejects required members that are also ignored.
+    [JsonIgnore]
+    public byte[] ImageBytes { get; init; } = [];
+
+    public required string MimeType { get; init; }
+    public required int Width { get; init; }
+    public required int Height { get; init; }
+    public required ScreenPoint Origin { get; init; }
+    public required double Scale { get; init; }
+
+    public object Metadata() => new { ok = Ok, mimeType = MimeType, width = Width, height = Height, origin = Origin, scale = Scale };
+}
+
+public sealed record ScreenPoint(int X, int Y);

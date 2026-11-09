@@ -55,3 +55,21 @@ Schema: [tools.md#type_text](../../tools.md#type_text).
 **Verification:** `(manual)` type_text with includeSnapshot.
 
 **Out of scope:** Phase 2 warnings.
+
+---
+
+### TR-P1-TOOL-TypeText-004 - Keyboard target window
+
+**Priority:** Must  
+**Depends on:** TR-P1-TOOL-TypeText-001  
+**Spec refs:** [tools.md#keyboard-input-target](../../tools.md#keyboard-input-target)
+
+**Requirement:** Tool SHALL accept optional `handle`. Without `ref`, it SHALL focus that window and verify it holds the foreground before sending keystrokes, failing with `FocusFailed` otherwise. SendInput-path responses SHALL include `target: { handle, title }`.
+
+**Acceptance criteria:**
+- [ ] `type_text` with a `handle` that cannot take the foreground returns `FocusFailed` and types nothing.
+- [ ] SendInput-path responses name the foreground window in `target`.
+
+**Verification:** unit test with an invalid handle; `(manual)` typing into Notepad by handle.
+
+**Out of scope:** Typing into a background window without focusing it.

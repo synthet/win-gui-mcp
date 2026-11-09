@@ -40,6 +40,7 @@ var mcpBuilder = builder.Services
             Name = "win-gui-mcp",
             Version = "0.1.0"
         };
+        options.ServerInstructions = ServerInstructions.Text;
     })
     .WithStdioServerTransport();
 
