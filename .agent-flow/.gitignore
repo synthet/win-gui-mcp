@@ -1,0 +1,7 @@
+# agent-flow local state (the committed record is tickets.jsonl + config.json)
+flow.db
+flow.db-*
+serve.json
+loop.json
+STOP
+*.tmp
