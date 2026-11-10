@@ -1,8 +1,8 @@
 # Cross-project constitution: WinGuiMcp ↔ DxO PhotoLab
 
 **Status:** Normative for agents working across both repositories.  
-**Parties:** [`win-gui-mcp`](https://github.com/synthet/win-gui-mcp) (generic Windows desktop MCP) and [`dxo-photolab-mcp`](https://github.com/synthet/dxo-photolab-mcp) (local checkout `D:\Projects\dxo-photolab-mcp`; DxO PhotoLab workflow + domain MCP).  
-**Sibling copy:** [`D:\Projects\dxo-photolab-mcp\docs\win-gui-mcp-boundaries.md`](file:///D:/Projects/dxo-photolab-mcp/docs/win-gui-mcp-boundaries.md) (obligations from the PhotoLab MCP repo).
+**Parties:** [`win-gui-mcp`](https://github.com/synthet/win-gui-mcp) (generic Windows desktop MCP) and [`dxo-photolab-mcp`](https://github.com/synthet/dxo-photolab-mcp) (local checkout `<projects-root>\dxo-photolab-mcp`; DxO PhotoLab workflow + domain MCP).  
+**Sibling copy:** [`<projects-root>\dxo-photolab-mcp\docs\win-gui-mcp-boundaries.md`](../../../dxo-photolab-mcp/docs/win-gui-mcp-boundaries.md) (obligations from the PhotoLab MCP repo).
 
 ---
 
@@ -20,13 +20,13 @@ Both projects automate **DxO PhotoLab 10** on Windows, but they solve different 
 |--------|-----------------|---------|
 | **Mission** | Playwright-style **generic** Windows UI automation (UIA3, refs, Phase 1 tools) for any desktop app | **PhotoLab-specific** workflow automation: launch, sidecars, presets, exports (MCP + scripts) |
 | **MCP server** | `win-gui-mcp` — stdio, `dotnet run` / published host | `dxo-photolab` — `DxoMcpServer.exe`, domain tools only |
-| **Tool names** | Only names in [`tools.md`](../tools.md) (`snapshot`, `click`, `set_value`, …) | Only `dxo_*` tools documented in [`mcp-server-guide.md`](file:///D:/Projects/dxo-photolab-mcp/docs/mcp-server-guide.md) |
-| **Normative DxO product spec** | Stub + link: [`docs/dxo-photolab/README.md`](../dxo-photolab/README.md) → **canonical in dxo-photolab-mcp** | [`docs/photolab-automation/SPEC.md`](file:///D:/Projects/dxo-photolab-mcp/docs/photolab-automation/SPEC.md) |
-| **Implementation plan (UIA)** | Gate tests in `tests/WinGuiMcp.Tests/`; generic guides in [`docs/guides/`](../guides/README.md) | [`docs/photolab-automation/PLAN.md`](file:///D:/Projects/dxo-photolab-mcp/docs/photolab-automation/PLAN.md) |
+| **Tool names** | Only names in [`tools.md`](../tools.md) (`snapshot`, `click`, `set_value`, …) | Only `dxo_*` tools documented in [`mcp-server-guide.md`](../../../dxo-photolab-mcp/docs/mcp-server-guide.md) |
+| **Normative DxO product spec** | Stub + link: [`docs/dxo-photolab/README.md`](../dxo-photolab/README.md) → **canonical in dxo-photolab-mcp** | [`docs/photolab-automation/SPEC.md`](../../../dxo-photolab-mcp/docs/photolab-automation/SPEC.md) |
+| **Implementation plan (UIA)** | Gate tests in `tests/WinGuiMcp.Tests/`; generic guides in [`docs/guides/`](../guides/README.md) | [`docs/photolab-automation/PLAN.md`](../../../dxo-photolab-mcp/docs/photolab-automation/PLAN.md) |
 | **Sidecar / file I/O** | OS waits in `wait_for` (`file-stable`, `process-exists`) — [`tools.md`](../tools.md) | **Owner** of `dxo_*` sidecar tools and `scripts/` |
-| **UI recipes (PhotoLab)** | [`docs/guides/integrating-sibling-mcp-servers.md`](../guides/integrating-sibling-mcp-servers.md) | [`docs/gui-automation-win-gui-mcp.md`](file:///D:/Projects/dxo-photolab-mcp/docs/gui-automation-win-gui-mcp.md) |
+| **UI recipes (PhotoLab)** | [`docs/guides/integrating-sibling-mcp-servers.md`](../guides/integrating-sibling-mcp-servers.md) | [`docs/gui-automation-win-gui-mcp.md`](../../../dxo-photolab-mcp/docs/gui-automation-win-gui-mcp.md) |
 | **Reverse engineering** | — | Not stored in either public GitHub repo. Merged product notes: `dxo-photolab-mcp/docs/photolab-automation/RESEARCH.md`. |
-| **Cross-links** | [`LINKS.json`](LINKS.json) | [`cross-project-LINKS.json`](file:///D:/Projects/dxo-photolab-mcp/docs/cross-project-LINKS.json) |
+| **Cross-links** | [`LINKS.json`](LINKS.json) | [`cross-project-LINKS.json`](../../../dxo-photolab-mcp/docs/cross-project-LINKS.json) |
 
 ---
 
@@ -81,7 +81,7 @@ Both **MUST** follow [`.agent/SAFETY.md`](../../.agent/SAFETY.md) (win-gui-mcp).
 
 - Fork or vendor `WinGuiMcp` source as a substitute for the generic MCP server.
 - Invent generic tool names (`snapshot`, `find_element`, …) that duplicate [`tools.md`](../tools.md).
-- Publish UIA gate acceptance criteria without aligning with [`docs/photolab-automation/SPEC.md`](file:///D:/Projects/dxo-photolab-mcp/docs/photolab-automation/SPEC.md) scenarios.
+- Publish UIA gate acceptance criteria without aligning with [`docs/photolab-automation/SPEC.md`](../../../dxo-photolab-mcp/docs/photolab-automation/SPEC.md) scenarios.
 
 ---
 
@@ -92,9 +92,9 @@ When documents disagree:
 | Question | Wins |
 |----------|------|
 | Generic MCP tool shape / errors | `win-gui-mcp` → [`tools.md`](../tools.md), [`errors.md`](../errors.md) |
-| PhotoLab functional requirements (UIA acceptance) | `dxo` → [`docs/photolab-automation/SPEC.md`](file:///D:/Projects/dxo-photolab-mcp/docs/photolab-automation/SPEC.md) |
-| PhotoLab “what is officially supported” / legal posture | `dxo` → [`docs/synthesis.md`](file:///D:/Projects/dxo-photolab-mcp/docs/synthesis.md) |
-| `dxo_*` tool arguments & behavior | `dxo` → [`docs/mcp-server-guide.md`](file:///D:/Projects/dxo-photolab-mcp/docs/mcp-server-guide.md) + `Program.cs` |
+| PhotoLab functional requirements (UIA acceptance) | `dxo` → [`docs/photolab-automation/SPEC.md`](../../../dxo-photolab-mcp/docs/photolab-automation/SPEC.md) |
+| PhotoLab “what is officially supported” / legal posture | `dxo` → [`docs/synthesis.md`](../../../dxo-photolab-mcp/docs/synthesis.md) |
+| `dxo_*` tool arguments & behavior | `dxo` → [`docs/mcp-server-guide.md`](../../../dxo-photolab-mcp/docs/mcp-server-guide.md) + `Program.cs` |
 | Cross-repo process | This file |
 
 **Research markdown** (Downloads exports, long RE reports) is **input only** until merged into the authority files above.
@@ -121,7 +121,7 @@ Register **two** servers (names are convention; paths are machine-local):
 | Server key | Command | Repo |
 |------------|---------|------|
 | `win-gui-mcp` | `dotnet run --project …/WinGuiMcp.csproj` | win-gui-mcp |
-| `dxo-photolab` | `D:\Projects\dxo-photolab-mcp\bin\mcp\DxoMcpServer.exe` | dxo-photolab-mcp |
+| `dxo-photolab` | `<projects-root>\dxo-photolab-mcp\bin\mcp\DxoMcpServer.exe` | dxo-photolab-mcp |
 
 Agents should declare which server they call in logs and prompts. Never assume a single server exposes both `snapshot` and `dxo_tweak_sliders`.
 
