@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "prefix": "wgui",
+  "leaseMinutes": 30,
+  "maxAttempts": 3,
+  "wip": {
+    "perAgent": 1,
+    "columns": {
+      "in_progress": 4,
+      "review": 6
+    }
+  },
+  "requireReview": true,
+  "requireHandoff": true,
+  "allowSelfApprove": false,
+  "dod": [],
+  "dodTimeoutMs": 600000,
+  "autoExport": true,
+  "defaultBranch": "main",
+  "branchPattern": "af/{id}-{slug}",
+  "worktreeDir": "../{repo}.worktrees",
+  "loop": {
+    "maxTickets": 5,
+    "label": "agent-ok",
+    "maxTurns": 80,
+    "harness": "claude"
+  },
+  "github": {
+    "enabled": false,
+    "repo": null,
+    "labelPrefix": "status:",
+    "issueLabel": "agent-flow",
+    "reconcileMinutes": 5,
+    "webhookSecretEnv": "AGENT_FLOW_GITHUB_SECRET"
+  },
+  "mailbox": {
+    "enabled": false,
+    "bin": "agent-mail",
+    "session": "agent-flow",
+    "scope": null,
+    "audience": "group",
+    "notifyOn": [
+      "claimed",
+      "review",
+      "rejected",
+      "blocked",
+      "needs_human",
+      "done",
+      "lease_expired"
+    ],
+    "reviewPeer": null
+  },
+  "swarm": {
+    "enabled": false,
+    "path": null,
+    "harnesses": [],
+    "autoApproveOnMajority": false,
+    "timeoutMs": 300000
+  },
+  "jev": {
+    "path": null,
+    "model": null,
+    "onSubmit": false,
+    "timeoutMs": 120000
+  },
+  "hooks": {
+    "taskCompletedDod": false,
+    "handoffOnStop": true,
+    "heartbeatMinutes": 5
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8791
+  }
+}
