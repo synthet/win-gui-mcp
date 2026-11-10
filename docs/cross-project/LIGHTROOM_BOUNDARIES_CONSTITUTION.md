@@ -1,8 +1,8 @@
 # Cross-project constitution: WinGuiMcp ↔ lightroom-mcp (Lightroom Desktop)
 
 **Status:** Normative for agents working across both repositories. Modelled on [DXO_BOUNDARIES_CONSTITUTION.md](DXO_BOUNDARIES_CONSTITUTION.md).
-**Parties:** `win-gui-mcp` (generic Windows UIA MCP and `WinGuiMcp.Core`) and `lightroom-mcp` (local checkout `D:\Projects\lightroom-mcp`: an Adobe **Lightroom Desktop (cloud)** domain server).
-**Not a party:** `lightroom-classic-mcp` (`D:\Projects\lightroom-classic-mcp`) automates **Lightroom Classic** through a Lua plug-in. It is a different product and a different repo.
+**Parties:** `win-gui-mcp` (generic Windows UIA MCP and `WinGuiMcp.Core`) and `lightroom-mcp` (local checkout `<projects-root>\lightroom-mcp`: an Adobe **Lightroom Desktop (cloud)** domain server).
+**Not a party:** `lightroom-classic-mcp` (`<projects-root>\lightroom-classic-mcp`) automates **Lightroom Classic** through a Lua plug-in. It is a different product and a different repo.
 
 ## 1. Charters
 
