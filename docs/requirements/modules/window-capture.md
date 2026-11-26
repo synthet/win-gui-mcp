@@ -48,7 +48,7 @@
 **Depends on:** TR-P1-MOD-WindowCapture-001  
 **Spec refs:** [tools.md#screenshot](../../tools.md#screenshot)
 
-**Requirement:** Optional `region` `{x,y,width,height}` SHALL crop capture output in physical pixels.
+**Requirement:** An optional region (`regionX`, `regionY`, `regionWidth`, `regionHeight` on the tool; `CaptureRegion` in Core) SHALL crop capture output in unscaled physical pixels, before `scale` is applied ([ADR-0002](../../adr/0002-operator-gaps.md)).
 
 **Acceptance criteria:**
 - [ ] Region outside frame rejected or clipped per implementation with no hang.

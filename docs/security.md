@@ -125,6 +125,11 @@ Product specs may still describe Settings flows for **manual operator** verifica
 - Snapshots contain UI text (names, values)—may include PII or secrets visible on screen
 - Trajectory logs (Phase 2) persist tool calls and snapshots—secure log directory
 - No telemetry in MVP; if added later, opt-in only
+- **File-writing tools** ([ADR-0002](adr/0002-operator-gaps.md); specified, not yet implemented — `wgui-7zzf7`): the MCP `screenshot` tool with `outputPath` will write only inside the capture root (`WINGUI_CAPTURE_ROOT`, default `%LOCALAPPDATA%\WinGuiMcp\captures`), only `.png` files, and rejects any path that resolves outside it before capturing. Captures can contain on-screen secrets; treat the root like the trajectory log directory. Any future file-writing tool needs the same kind of root. Accepted exception: scenario steps (`run_scenario`) still accept an absolute `outputPath` anywhere, because scenario files are written and run by an operator with `allowWrites` ([scenarios.md](scenarios.md)).
+
+## Host-window protection
+
+The agent that drives WinGuiMcp usually runs in a window on the same desktop (a terminal or IDE), sometimes a window of the very app it was asked to drive. [ADR-0002](adr/0002-operator-gaps.md) specifies (not yet implemented — `wgui-sl5an`) that the server protects the windows of its ancestor processes that exist at startup, plus `WINGUI_PROTECTED_WINDOWS`; input to them fails with `TargetNotAllowed` unless the call passes `allowSelf: true`. See [tools.md](tools.md#protected-windows-and-allowself). This guards against mis-targeting, not against a hostile agent: `allowSelf` is a per-call opt-out.
 
 ## Confirmation gate (Phase 4)
 

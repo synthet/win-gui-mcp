@@ -30,7 +30,7 @@ Schema: [tools.md#screenshot](../../tools.md#screenshot).
 **Depends on:** TR-P1-TOOL-Screenshot-001  
 **Spec refs:** [tools.md#screenshot](../../tools.md#screenshot)
 
-**Requirement:** Tool SHALL support optional `scale` (0.1–1.0) and `region` crop.
+**Requirement:** Tool SHALL support optional `scale` (0.1–1.0) and a region crop given as `regionX`, `regionY`, `regionWidth`, `regionHeight` (all four or none; [ADR-0002](../../adr/0002-operator-gaps.md)).
 
 **Acceptance criteria:**
 - [ ] scale reduces output dimensions appropriately.
