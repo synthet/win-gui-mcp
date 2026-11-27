@@ -44,7 +44,7 @@ Successful calls may include warnings (not failures):
 | `FocusFailed` | recoverable | Could not foreground target window | Call `focus_window`; check if minimized |
 | `InvalidArgument` | client | Malformed params or unknown enum | Fix request schema |
 | `CVLowConfidence` | recoverable | Phase 3: vision detection below threshold | Retry with `useVision: true` or manual `screenshot` |
-| `CaptureFailed` | recoverable | Screenshot or WGC capture error | Retry; check if window is occluded |
+| `CaptureFailed` | recoverable | Screenshot or WGC capture error | Retry; check if window is occluded. A covered window is not an error: `screenshot` will report `occluded: true` (ADR-0002, `wgui-cy6wh`) |
 | `LaunchFailed` | recoverable | `launch_app` could not start process | Verify path/AUMID and permissions |
 | `ConfirmationRequired` | hard | Phase 4: destructive action blocked pending user ack | User confirms via client; retry with `confirmationId` |
 | `InternalError` | hard | Unexpected server exception | Log and retry once; report if persistent |
@@ -52,7 +52,7 @@ Successful calls may include warnings (not failures):
 | `StepNotFound` | client | A step names a tool or `ns.step` no provider serves | Check `list_scenarios` / tools.md names |
 | `AssertionFailed` | recoverable | An `assert`, `expect` or `fail` step was false | Inspect the receipt; adjust the app state or the scenario |
 | `WritesNotAllowed` | client | A non-read-only step ran without `allowWrites` | Review the scenario, then rerun with `allowWrites: true` |
-| `TargetNotAllowed` | hard | An actuating step hit a window outside `target.processes`, a restricted system app, or a stale handle; or the scenario declares no `target` | Fix `target` or the step; never widen it to system apps |
+| `TargetNotAllowed` | hard | An actuating step hit a window outside `target.processes`, a restricted system app, or a stale handle; or the scenario declares no `target`. ADR-0002 (not yet implemented — `wgui-sl5an`): any actuating tool aimed at a protected window (the server's host window or a `WINGUI_PROTECTED_WINDOWS` entry) without `allowSelf: true` | Fix `target` or the step; never widen it to system apps. For a protected window, pick the intended window; pass `allowSelf` only when the host window really is the target |
 | `GuardFailed` | recoverable | A step's `guard:` foreground check failed; nothing was sent | Wait, refocus, or re-capture; then resume or rerun |
 | `ResumeTokenInvalid` | client | Unknown, used, expired or forged token; scenario changed; secret param missing | Start a new run |
 
@@ -72,6 +72,8 @@ Errors may include machine-readable context for agents and trajectory logs:
 | `backend` | `"uia"`, `"msaa"`, `"cv"`, `"sendinput"` — last resolution path attempted |
 | `candidates` | Short list of `{ ref, name, role }` on `Ambiguous` |
 | `traceId` | Links to observability log entry |
+| `foregroundHwnd`, `foregroundTitle` | Errors from direct tool calls that go through `Phase1Tools.Execute` (not `wait_for` or `execute_tool`): the window holding the foreground when the error was returned. Catalog and scenario paths omit them ([ADR-0001](adr/0001-core-library-and-scenarios.md)) |
+| `protectedHandle`, `reason` | `TargetNotAllowed` for a protected window (ADR-0002, `wgui-sl5an`): the handle, and `"host-window"` or `"configured"` |
 
 ### Research terminology aliases
 
@@ -95,12 +97,13 @@ Landscape survey ([research/deep-research-report.md](research/deep-research-repo
 | `snapshot` | `WindowGone`, `CaptureFailed`, `UIPIBlocked` |
 | `find_element` | `ElementNotFound`, `Ambiguous`, `Timeout` |
 | `get_properties` | `ElementNotFound` |
-| `click`, `type_text`, `set_value` | `ElementNotFound`, `PatternNotSupported`, `ElementNotEnabled`, `VisibilityMismatch`, `UIPIBlocked`, `FocusFailed` |
+| `click`, `type_text`, `set_value` | `ElementNotFound`, `PatternNotSupported`, `ElementNotEnabled`, `VisibilityMismatch`, `UIPIBlocked`, `FocusFailed`, `TargetNotAllowed` (`wgui-sl5an`) |
+| `scroll`, `drag` | `ElementNotFound`, `InvalidArgument`, `UIPIBlocked`, `FocusFailed` (with `handle`, `wgui-xs15j`), `TargetNotAllowed` (`wgui-sl5an`) |
 | `hotkey` | `InvalidArgument`, `FocusFailed`, `UIPIBlocked` |
 | `focus_window` | `WindowGone`, `FocusFailed`, `UIPIBlocked` |
-| `launch_app` | `LaunchFailed` |
-| `wait_for` | `Timeout`, `WindowGone` |
-| `screenshot` | `WindowGone`, `CaptureFailed` |
+| `launch_app` | `LaunchFailed`, `Timeout` |
+| `wait_for` | `Timeout`, `WindowGone`, `InvalidArgument`, `CaptureFailed` (`region-*`, `wgui-2x3n5`) |
+| `screenshot` | `WindowGone`, `CaptureFailed`, `InvalidArgument` (partial region; `outputPath` outside the capture root or not `.png`, `wgui-7zzf7`) |
 
 ## Post-action warnings
 

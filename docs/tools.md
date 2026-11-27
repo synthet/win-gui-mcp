@@ -52,6 +52,14 @@ Diff-only snapshots are a Phase 2 optimization; MVP always returns the full prun
 
 Post-action `_warning` fields (see [errors.md](errors.md)) may appear alongside `snapshotDelta`. Warning emission is **specified now**; implementation is Phase 2.
 
+### Protected windows and `allowSelf`
+
+*(ADR-0002; not yet implemented — `wgui-sl5an`)*
+
+At startup the server records its **protected windows**: the visible top-level windows owned by its ancestor processes (the terminal or IDE that launched it), walking up the parent chain and stopping at `explorer.exe`, a process in another session, or a missing parent; plus every entry in `WINGUI_PROTECTED_WINDOWS` (comma-separated decimal HWNDs or process names). Windows those processes open later are not protected.
+
+Every actuating tool (`click`, `type_text`, `set_value`, `hotkey`, `press_key`, `scroll`, `drag`, `toggle`, `select`, `expand`, `collapse`, `close_window`, `set_window_state`) accepts optional `allowSelf` (boolean, default `false`). When the target window — the ref's window, `handle`, or the top-level window under the point — is protected and `allowSelf` is not `true`, the call fails with `TargetNotAllowed` and sends nothing. `details`: `protectedHandle`, `reason` (`"host-window"` or `"configured"`).
+
 ---
 
 ## Phase 1 — MVP tools
@@ -91,13 +99,19 @@ Returns top-level visible windows.
       "processName": "CalculatorApp",
       "pid": 9012,
       "isForeground": true,
-      "isMinimized": false
+      "isMinimized": false,
+      "rect": { "x": 0, "y": 0, "width": 1280, "height": 800 },
+      "monitor": "\\\\.\\DISPLAY1",
+      "dpi": 144,
+      "isCloaked": false
     }
   ]
 }
 ```
 
-**Execution:** `EnumWindows` + UIA root validation; filter in-process. Bbox omitted (agent uses `handle`).
+`rect`, `monitor`, `dpi` and `isCloaked`: *(ADR-0002; not yet implemented — `wgui-mquv0`)* `rect` is `GetWindowRect` in physical pixels; `monitor` is the device name of the monitor that holds most of the window (`MonitorFromWindow`); `dpi` is `GetDpiForWindow`; `isCloaked` is `DWMWA_CLOAKED` (for example a window on another virtual desktop).
+
+**Execution:** `EnumWindows` + UIA root validation; filter in-process.
 
 ---
 
@@ -135,11 +149,14 @@ Starts an application by executable path or Application User Model ID (AUMID).
   "ok": true,
   "handle": 12345678,
   "title": "Notepad",
-  "pid": 3456
+  "pid": 3456,
+  "isNew": true
 }
 ```
 
 **Execution:** `Process.Start` or shell `ShellExecute` for AUMID; poll `list_windows` until match or timeout → `LaunchFailed` / `Timeout`.
+
+**Window choice** *(ADR-0002; not yet implemented — `wgui-tjexv`)*: the server records the window set before launching. A window that was not in that set and matches the launch wins, with `isNew: true`. If none appears within `waitForWindowMs`, the server returns an existing window of the expected process with `isNew: false` (for apps that reuse a window or open a tab); it never returns a protected window. Otherwise `Timeout`.
 
 ---
 
@@ -166,11 +183,15 @@ Brings a window to the foreground.
 {
   "ok": true,
   "handle": 12345678,
-  "focused": true
+  "focused": true,
+  "foregroundHwnd": 12345678,
+  "foregroundTitle": "Untitled - Notepad"
 }
 ```
 
 **Execution:** `SetForegroundWindow` with `AttachThreadInput` fallback if needed. Errors: `WindowGone`, `FocusFailed`, `UIPIBlocked`.
+
+`focused: true` means the target held the foreground when the server checked. `foregroundHwnd` / `foregroundTitle` and the settle re-check: *(ADR-0002; not yet implemented — `wgui-0vgx7`)* When the server had to switch windows, it checks again after 100 ms and fails with `FocusFailed` if the foreground moved. Every tool that focuses a window first inherits this check. `FocusFailed` already carries `details.foregroundHwnd` / `foregroundTitle`.
 
 ---
 
@@ -321,18 +342,14 @@ Clicks an element by ref or physical point.
   "type": "object",
   "oneOf": [
     { "required": ["ref"] },
-    { "required": ["point"] }
+    { "required": ["x", "y"] }
   ],
   "properties": {
     "ref": { "type": "string" },
-    "point": {
-      "type": "object",
-      "required": ["x", "y"],
-      "properties": {
-        "x": { "type": "integer" },
-        "y": { "type": "integer" }
-      }
-    },
+    "x": { "type": "integer", "description": "Physical screen x" },
+    "y": { "type": "integer", "description": "Physical screen y" },
+    "handle": { "type": "integer", "description": "ADR-0002: window to focus and verify before an x,y click" },
+    "allowSelf": { "type": "boolean", "default": false },
     "button": {
       "type": "string",
       "enum": ["left", "right", "middle"],
@@ -368,7 +385,7 @@ Clicks an element by ref or physical point.
 4. CV-sourced (Phase 3): always SendInput at bbox center.
 5. Optional post-action delta + `_warning` if state unchanged.
 
-**Point path:** SendInput only (escape hatch for debugging).
+**Point path:** SendInput only (escape hatch for debugging). With `handle` *(ADR-0002; not yet implemented — `wgui-xs15j`)*: focus that window and verify it holds the foreground (as `hotkey`), else fail with `FocusFailed` and send nothing. `handle` with `ref` must name the ref's window, else `InvalidArgument`.
 
 Never use deprecated `mouse_event`.
 
@@ -393,7 +410,8 @@ Types text into the focused control or a specific ref.
       "default": false,
       "description": "Send Enter after text"
     },
-    "includeSnapshot": { "type": "boolean", "default": false }
+    "includeSnapshot": { "type": "boolean", "default": false },
+    "allowSelf": { "type": "boolean", "default": false, "description": "ADR-0002: allow input to a protected window" }
   },
   "additionalProperties": false
 }
@@ -434,7 +452,8 @@ Sets control value directly via UIA ValuePattern.
   "properties": {
     "ref": { "type": "string" },
     "value": { "type": "string" },
-    "includeSnapshot": { "type": "boolean", "default": false }
+    "includeSnapshot": { "type": "boolean", "default": false },
+    "allowSelf": { "type": "boolean", "default": false, "description": "ADR-0002: allow input to a protected window" }
   },
   "additionalProperties": false
 }
@@ -471,7 +490,8 @@ Sends a key chord to the foreground window.
       "type": "integer",
       "description": "Optional HWND to focus before sending the chord"
     },
-    "includeSnapshot": { "type": "boolean", "default": false }
+    "includeSnapshot": { "type": "boolean", "default": false },
+    "allowSelf": { "type": "boolean", "default": false, "description": "ADR-0002: allow input to a protected window" }
   },
   "additionalProperties": false
 }
@@ -508,15 +528,11 @@ Captures a window or full screen.
       "type": "integer",
       "description": "Omit for full screen"
     },
-    "region": {
-      "type": "object",
-      "properties": {
-        "x": { "type": "integer" },
-        "y": { "type": "integer" },
-        "width": { "type": "integer" },
-        "height": { "type": "integer" }
-      }
-    },
+    "regionX": { "type": "integer", "description": "Crop in unscaled capture pixels (physical), relative to the captured image's top-left; applied before scale; all four or none" },
+    "regionY": { "type": "integer" },
+    "regionWidth": { "type": "integer" },
+    "regionHeight": { "type": "integer" },
+    "outputPath": { "type": "string", "description": "ADR-0002: write a PNG under the capture root instead of returning base64" },
     "scale": {
       "type": "number",
       "default": 1.0,
@@ -537,11 +553,31 @@ Captures a window or full screen.
   "imageBase64": "…",
   "mimeType": "image/png",
   "width": 1024,
-  "height": 768
+  "height": 768,
+  "origin": { "x": 640, "y": 300 },
+  "scale": 0.5,
+  "windowRect": { "x": 632, "y": 292, "width": 2064, "height": 1552 },
+  "captureMethod": "wgc",
+  "occluded": false,
+  "frameHash": "9f3a…(64 hex chars)"
 }
 ```
 
-**Execution:** Windows.Graphics.Capture (WGC) per-window; BitBlt fallback Phase 1 if WGC unavailable. Phase 2: DXGI for full-screen games.
+The result is one JSON text block plus the same object as `structuredContent`; there is no MCP image block.
+
+**Metadata** *(ADR-0002; not yet implemented — `wgui-cy6wh`)*:
+
+- `origin`: physical screen position of image pixel (0, 0), including the region offset. Map an image point back with `x = origin.x + round(px / scale)`, `y = origin.y + round(py / scale)`.
+- `scale`: the applied downscale factor.
+- `windowRect`: `GetWindowRect` of `handle`, physical pixels (handle captures only).
+- `captureMethod`: `wgc`, `printWindow` or `desktop`. Full-screen captures are `desktop` and cover the primary monitor, origin (0, 0).
+- `occluded`: `true` when a handle capture fell through to `desktop` while another window covers part of the target, so the image may show that window. Not an error.
+
+**`frameHash`** *(ADR-0002; not yet implemented — `wgui-4mx5e`)*: 256-bit dHash of the returned image (17×16 grayscale), 64 hex chars. Two frames whose Hamming distance is ≤ 3 count as unchanged (`region-stable`, `scroll.changed`).
+
+**`outputPath`** *(ADR-0002; not yet implemented — `wgui-7zzf7`)*: writes the PNG instead of returning `imageBase64`. The path must end in `.png`; relative paths resolve under the capture root (`WINGUI_CAPTURE_ROOT`, default `%LOCALAPPDATA%\WinGuiMcp\captures`); after full-path normalization the file must lie inside that root, else `InvalidArgument` and nothing is written. An existing file is overwritten. The result replaces `imageBase64` with `path`, `bytes` and `sha256`; other fields are unchanged. Scenario steps keep their behaviour: relative paths go in the run folder ([scenarios.md](scenarios.md)).
+
+**Execution:** Windows.Graphics.Capture (WGC) per-window, then `PrintWindow(PW_RENDERFULLCONTENT)`, then a crop of the desktop at the window rect when both come back blank. Phase 2: DXGI for full-screen games.
 
 ---
 
@@ -573,7 +609,9 @@ Waits until a condition holds or timeout.
         "value-equals",
         "process-exists",
         "file-exists",
-        "file-stable"
+        "file-stable",
+        "region-stable",
+        "region-changed"
       ]
     },
     "target": {
@@ -587,7 +625,11 @@ Waits until a condition holds or timeout.
     },
     "settleMs": { "type": "integer", "default": 200, "minimum": 0, "maximum": 60000 },
     "minBytes": { "type": "integer", "default": 1, "minimum": 0 },
-    "changedSinceUtc": { "type": "string", "format": "date-time" }
+    "changedSinceUtc": { "type": "string", "format": "date-time" },
+    "regionX": { "type": "integer", "description": "region-* conditions: crop of the window capture, as in screenshot" },
+    "regionY": { "type": "integer" },
+    "regionWidth": { "type": "integer" },
+    "regionHeight": { "type": "integer" }
   },
   "additionalProperties": false
 }
@@ -602,6 +644,8 @@ Waits until a condition holds or timeout.
   "elapsedMs": 340
 }
 ```
+
+**`region-stable` / `region-changed`** *(ADR-0002; not yet implemented — `wgui-2x3n5`)*: capture `handle` (non-zero), optionally cropped by `regionX/Y/Width/Height`, and compare `frameHash` values. `region-stable` succeeds once consecutive captures stay unchanged for `settleMs`; `region-changed` succeeds once a capture differs from the one taken at call start. Both return `condition`, `elapsedMs` and the last `frameHash`; `Timeout` after `timeoutMs`.
 
 **Execution:** Poll asynchronously with exponential backoff (50 ms → 500 ms cap), a bounded deadline, and request cancellation. OS-level conditions ignore `handle` (pass `0`). `file-stable` requires at least `minBytes` and unchanged size/last-write timestamp throughout `settleMs`; optional `changedSinceUtc` requires a later last-write timestamp. Old files can pass when freshness is not requested. This is a file-readiness predicate, not proof of application export success or image validity. Successful element waits return registered numeric refs. OS/window/absence waits return `condition` and `target` without an actionable ref. Error: `Timeout`, `WindowGone`, `InvalidArgument`.
 
@@ -651,9 +695,11 @@ Input: `{ x, y }`. Uses `AutomationElement.FromPoint` for interactive element de
 
 Input: `{ ref?, x?, y?, direction: "up"|"down"|"left"|"right", amount: number, includeSnapshot? }`. Uses `ScrollPattern` or mouse wheel SendInput.
 
+ADR-0002 additions: `handle` on the `x,y` form, as for `click` *(ADR-0002; not yet implemented — `wgui-xs15j`)*. Units *(ADR-0002; not yet implemented — `wgui-xm3lj`)*: on the `ScrollPattern` path one unit of `amount` is one `SmallIncrement` / `SmallDecrement` step; on the wheel path it is one notch, sent as a separate 120-unit wheel input. The result adds `changed`: whether the target window's `frameHash` differs before and after (`null` when it could not be captured).
+
 ### `drag` (Implemented)
 
-Input: `{ sourceRef?, startX?, startY?, targetRef?, endX?, endY?, button?, includeSnapshot? }`. SendInput drag sequence.
+Input: `{ sourceRef?, startX?, startY?, targetRef?, endX?, endY?, button?, includeSnapshot? }`. SendInput drag sequence. ADR-0002: `handle` on the coordinate form, as for `click` *(ADR-0002; not yet implemented — `wgui-xs15j`)*.
 
 ### `close_window` (Implemented)
 
