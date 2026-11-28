@@ -53,7 +53,7 @@ Each step has exactly one **action key** plus optional modifiers.
 
 | Action | Meaning |
 |---|---|
-| any win-gui tool | `click`, `find_element`, `wait_for`, `screenshot`, ... ([tools.md](tools.md)). `screenshot` with `outputPath` writes a PNG (relative paths go in the run folder) instead of base64 |
+| any win-gui tool | `click`, `find_element`, `wait_for`, `screenshot`, ... ([tools.md](tools.md)). `screenshot` with `outputPath` writes a PNG (relative paths go in the run folder and may not escape it; `.png` only, and an absolute path must lie inside the capture root — not yet enforced, `wgui-bbf78`) instead of base64 |
 | `ns.step` | A sibling provider's step, e.g. `lr.set_values` in lightroom-mcp |
 | `set` | `{ name: value-or-${expr} }` assigns variables |
 | `assert` | `"expr"` or `{ expression, message }`. Not evaluated in a dry run |

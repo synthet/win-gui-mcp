@@ -4,7 +4,7 @@ Source: [phases.md#wpf-sample](../../phases.md#wpf-sample).
 
 **Prerequisite:** WPF sample app in test environment.
 
-**Pass rule:** Ref-based only; no `click.point`.
+**Pass rule:** Ref-based only; no `click` with `x`,`y`.
 
 ---
 

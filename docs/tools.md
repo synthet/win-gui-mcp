@@ -58,7 +58,7 @@ Post-action `_warning` fields (see [errors.md](errors.md)) may appear alongside 
 
 At startup the server records its **protected windows**: the visible top-level windows owned by its ancestor processes (the terminal or IDE that launched it), walking up the parent chain and stopping at `explorer.exe`, a process in another session, or a missing parent; plus every entry in `WINGUI_PROTECTED_WINDOWS` (comma-separated decimal HWNDs or process names). Windows those processes open later are not protected.
 
-Every actuating tool (`click`, `type_text`, `set_value`, `hotkey`, `press_key`, `scroll`, `drag`, `toggle`, `select`, `expand`, `collapse`, `close_window`, `set_window_state`) accepts optional `allowSelf` (boolean, default `false`). When the target window — the ref's window, `handle`, or the top-level window under the point — is protected and `allowSelf` is not `true`, the call fails with `TargetNotAllowed` and sends nothing. `details`: `protectedHandle`, `reason` (`"host-window"` or `"configured"`).
+Every actuating tool (`click`, `type_text`, `set_value`, `hotkey`, `press_key`, `scroll`, `drag`, `toggle`, `select`, `expand`, `collapse`, `close_window`, `set_window_state`) accepts optional `allowSelf` (boolean, default `false`). When the target window — the ref's window, `handle`, the top-level window under the point, or, for keyboard input without a target (`type_text` without `ref`, `hotkey` and `press_key` without `handle`), the foreground window — is protected and `allowSelf` is not `true`, the call fails with `TargetNotAllowed` and sends nothing. `details`: `protectedHandle`, `reason` (`"host-window"` or `"configured"`).
 
 ---
 
@@ -575,7 +575,7 @@ The result is one JSON text block plus the same object as `structuredContent`; t
 
 **`frameHash`** *(ADR-0002; not yet implemented — `wgui-4mx5e`)*: 256-bit dHash of the returned image (17×16 grayscale), 64 hex chars. Two frames whose Hamming distance is ≤ 3 count as unchanged (`region-stable`, `scroll.changed`).
 
-**`outputPath`** *(ADR-0002; not yet implemented — `wgui-7zzf7`)*: writes the PNG instead of returning `imageBase64`. The path must end in `.png`; relative paths resolve under the capture root (`WINGUI_CAPTURE_ROOT`, default `%LOCALAPPDATA%\WinGuiMcp\captures`); after full-path normalization the file must lie inside that root, else `InvalidArgument` and nothing is written. An existing file is overwritten. The result replaces `imageBase64` with `path`, `bytes` and `sha256`; other fields are unchanged. Scenario steps keep their behaviour: relative paths go in the run folder ([scenarios.md](scenarios.md)).
+**`outputPath`** *(ADR-0002; not yet implemented — `wgui-7zzf7`)*: writes the PNG instead of returning `imageBase64`. The path must end in `.png`; relative paths resolve under the capture root (`WINGUI_CAPTURE_ROOT`, default `%LOCALAPPDATA%\WinGuiMcp\captures`); after full-path normalization the file must lie inside that root, else `InvalidArgument` and nothing is written. An existing file is overwritten. The result replaces `imageBase64` with `path`, `bytes` and `sha256`; other fields are unchanged. Scenario steps (not yet implemented — `wgui-bbf78`) apply the same `.png` rule; relative paths go in the run folder and must stay inside it after normalization (no `..` escape), and an absolute path must lie inside the capture root ([scenarios.md](scenarios.md)).
 
 **Execution:** Windows.Graphics.Capture (WGC) per-window, then `PrintWindow(PW_RENDERFULLCONTENT)`, then a crop of the desktop at the window rect when both come back blank. Phase 2: DXGI for full-screen games.
 
@@ -663,7 +663,7 @@ Brief definitions; implement in Phase 2 unless noted.
 2. MSAA / IAccessible2 bridge when UIA is incomplete
 3. Win32 context (HWND ancestry, class name)
 4. Vision fallback — OCR text or icon match on window ROI (Phase 3)
-5. Coordinate-only — last resort via `click.point` or `inspect_at`
+5. Coordinate-only — last resort via `click` with `x`,`y` or `inspect_at`
 
 Vision selectors (research: `ocr:"Save As"`, `icon:"trash"`) are Phase 3 additions to `find_element` or a future `query` tool.
 

@@ -52,7 +52,7 @@ Physical pixel semantics and SendInput safety. Canonical: [architecture.md#dpi](
 
 **Acceptance criteria:**
 - [ ] `snapshot`, `find_element`, `get_properties` outputs contain no `bbox` field.
-- [ ] `click.point` accepts coordinates in tool input only (debug escape hatch).
+- [ ] `click` with `x`,`y` accepts coordinates in tool input only (debug escape hatch).
 
 **Verification:** `(manual)` Inspect Calculator snapshot JSON for bbox absence.
 

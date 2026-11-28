@@ -54,11 +54,19 @@ See [Performance budgets](#performance-budgets) for p95 targets from landscape r
 
 Vision, `scroll`/`drag`, UIA events, trajectory logging, HTTP transport, post-action `_warning` emission (contract spec'd in [errors.md](errors.md); implement Phase 2).
 
+### Phase 1 hardening
+
+Fixes to existing Phase 1 tools that misreport results or can hit the wrong window. They add no new tools, so
+they may land before the Phase 1 gate passes. Tickets carry the label `phase:1-hardening`; the list is in
+[ADR-0002](adr/0002-operator-gaps.md). New capabilities stay in Phase 2, including new parameters or behaviour
+for Phase 2 tools (`scroll`, `drag`, `wait_for` region conditions). A guard that applies to every actuating
+tool, such as the `allowSelf` check, is hardening even where it also covers `scroll` and `drag`.
+
 ---
 
 ## Phase 1 acceptance checklist
 
-Run manually or via `/phase-gate`. Each flow must complete **without coordinate-only clicks** (`click.point`).
+Run manually or via `/phase-gate`. Each flow must complete **without coordinate-only clicks** (`click` with `x`,`y`).
 
 ### Calculator
 

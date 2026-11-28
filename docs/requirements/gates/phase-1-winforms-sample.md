@@ -4,7 +4,7 @@ Source: [phases.md#winforms-sample](../../phases.md#winforms-sample).
 
 **Prerequisite:** WinForms sample app available in test environment (path documented in gate run notes).
 
-**Pass rule:** Ref-based only; no `click.point`.
+**Pass rule:** Ref-based only; no `click` with `x`,`y`.
 
 ---
 

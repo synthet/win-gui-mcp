@@ -2,7 +2,7 @@
 
 Source flow: [phases.md#calculator](../../phases.md#calculator). Run via `/phase-gate`.
 
-**Pass rule:** Complete all steps using **ref-based** actions only. **`click.point` fails the gate.**
+**Pass rule:** Complete all steps using **ref-based** actions only. **`click` with `x`,`y` fails the gate.**
 
 ## Recording template
 

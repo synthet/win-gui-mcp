@@ -99,7 +99,7 @@ Landscape survey ([research/deep-research-report.md](research/deep-research-repo
 | `get_properties` | `ElementNotFound` |
 | `click`, `type_text`, `set_value` | `ElementNotFound`, `PatternNotSupported`, `ElementNotEnabled`, `VisibilityMismatch`, `UIPIBlocked`, `FocusFailed`, `TargetNotAllowed` (`wgui-sl5an`) |
 | `scroll`, `drag` | `ElementNotFound`, `InvalidArgument`, `UIPIBlocked`, `FocusFailed` (with `handle`, `wgui-xs15j`), `TargetNotAllowed` (`wgui-sl5an`) |
-| `hotkey` | `InvalidArgument`, `FocusFailed`, `UIPIBlocked` |
+| `hotkey`, `press_key` | `InvalidArgument`, `FocusFailed`, `UIPIBlocked`, `TargetNotAllowed` (`wgui-sl5an`) |
 | `focus_window` | `WindowGone`, `FocusFailed`, `UIPIBlocked` |
 | `launch_app` | `LaunchFailed`, `Timeout` |
 | `wait_for` | `Timeout`, `WindowGone`, `InvalidArgument`, `CaptureFailed` (`region-*`, `wgui-2x3n5`) |

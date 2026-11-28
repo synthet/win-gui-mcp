@@ -2,7 +2,7 @@
 
 Source: [phases.md#notepad](../../phases.md#notepad).
 
-**Pass rule:** Ref-based actions only; no `click.point`.
+**Pass rule:** Ref-based actions only; no `click` with `x`,`y`.
 
 | Step | Pass | Notes |
 |------|------|-------|

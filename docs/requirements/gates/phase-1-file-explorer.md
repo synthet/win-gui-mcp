@@ -2,7 +2,7 @@
 
 Source: [phases.md#file-explorer](../../phases.md#file-explorer).
 
-**Pass rule:** Ref-based only; no `click.point`.
+**Pass rule:** Ref-based only; no `click` with `x`,`y`.
 
 ---
 
