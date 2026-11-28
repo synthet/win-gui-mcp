@@ -137,7 +137,7 @@ Slash commands: `/bootstrap-phase1`, `/implement-tool`, `/phase-gate`
 - `scroll`, `drag`, Phase 2 pattern tools
 - UIA event subscriptions (Phase 2)
 - Required post-action `_warning` emission (Phase 2)
-- `click.point` for gate pass criteria
+- `click` with `x`,`y` for gate pass criteria
 - HTTP MCP transport
 
 ## Open questions (spec review before implementation)

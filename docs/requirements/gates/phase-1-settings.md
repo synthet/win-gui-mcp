@@ -2,7 +2,7 @@
 
 Source: [phases.md#settings](../../phases.md#settings).
 
-**Pass rule:** Ref-based only; no `click.point`. Record snapshot latency (TR-P1-X-Performance-002).
+**Pass rule:** Ref-based only; no `click` with `x`,`y`. Record snapshot latency (TR-P1-X-Performance-002).
 
 ---
 

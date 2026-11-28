@@ -4,7 +4,7 @@ Spec: [operator-gaps-2026-11-26.md](operator-gaps-2026-11-26.md) §7. Each task 
 `tests/WinGuiMcp.Tests/golden/tool-surface.json` when the tool surface changes, and its own tests come first
 (red, then green) in the same PR.
 
-Phase placement ([ADR-0002](../adr/0002-operator-gaps.md)): T-2, T-3, T-4, T-9 and T-10 are Phase 1 hardening (label `phase:1-hardening`); T-5, T-6, T-7, T-8 and T-11 are Phase 2 (label `phase:2`) and wait for the Phase 1 gate.
+Phase placement ([ADR-0002](../adr/0002-operator-gaps.md), owner decision 2026-11-28): T-2, T-3, T-9 and T-10 are Phase 1 hardening (label `phase:1-hardening`), plus `wgui-bbf78` (scenario `outputPath` confinement), which was filed from the review and has no T-number. T-4, T-5, T-6, T-7, T-8 and T-11 are Phase 2 (label `phase:2`) and wait for the Phase 1 gate; T-4 moved there because `scroll` and `drag` are Phase 2 tools.
 
 T-1 is the acceptance gate: [CANONICAL_SOURCES.md](../CANONICAL_SOURCES.md) forbids implementing a proposal before
 tools.md adopts it, so every code task depends on T-1. A human reviews T-1.

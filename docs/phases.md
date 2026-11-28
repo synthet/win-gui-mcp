@@ -58,8 +58,9 @@ Vision, `scroll`/`drag`, UIA events, trajectory logging, HTTP transport, post-ac
 
 Fixes to existing Phase 1 tools that misreport results or can hit the wrong window. They add no new tools, so
 they may land before the Phase 1 gate passes. Tickets carry the label `phase:1-hardening`; the list is in
-[ADR-0002](adr/0002-operator-gaps.md). Changes that add capabilities or touch Phase 2 tools (`scroll`, `drag`,
-`wait_for` region conditions) stay in Phase 2.
+[ADR-0002](adr/0002-operator-gaps.md). New capabilities stay in Phase 2, including new parameters or behaviour
+for Phase 2 tools (`scroll`, `drag`, `wait_for` region conditions). A guard that applies to every actuating
+tool, such as the `allowSelf` check, is hardening even where it also covers `scroll` and `drag`.
 
 ---
 
